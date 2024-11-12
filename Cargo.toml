@@ -1,0 +1,15 @@
+[package]
+name = "microbot"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+http = "1.1.0"
+matrix-sdk = { git = "https://github.com/matrix-org/matrix-rust-sdk.git", rev = "cbb92cacce1d16673a949204e4f88b78e9917026", default-features = false, features = ["rustls-tls"] }
+regex = "1.11.1"
+ruma = { version = "0.10.1", features = ["events"] }
+ruma-common = "0.13.0"
+serde = { version = "1.0.215", features = ["derive"] }
+thiserror = "2.0.3"
+tokio = "1.41.1"
+tracing = "0.1.40"
