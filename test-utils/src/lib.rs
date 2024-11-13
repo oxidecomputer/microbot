@@ -18,7 +18,7 @@ use matrix_sdk::{
 };
 use microbot::{MatrixMessenger, MatrixMessengerSignals};
 use ruma::api::client::{error::ErrorKind, uiaa};
-use tokio::{sync::watch::Receiver, task::JoinHandle};
+use tokio::sync::watch::Receiver;
 use tracing::instrument;
 
 pub struct TestSetup {
@@ -104,9 +104,7 @@ pub async fn setup(homeserver: &str, sender: &str, bots: &[&str]) -> TestSetup {
     }
 }
 
-pub async fn spawn_bot(
-    bot: &mut MatrixMessenger,
-) -> Receiver<MatrixMessengerSignals> {
+pub async fn spawn_bot(bot: &mut MatrixMessenger) -> Receiver<MatrixMessengerSignals> {
     let mut signals = bot.signals();
     bot.start().await.expect("Bot failed to run to completion");
 

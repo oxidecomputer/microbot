@@ -230,7 +230,7 @@ impl MatrixMessenger {
         handlers: Ctx<Arc<RwLock<CommandHandlers>>>,
         extensions: Ctx<MessengerContext>,
         parser: Ctx<CommandMessageParser>,
-        bot_user: Ctx<OwnedUserId>,
+        bot_user: Ctx<Option<OwnedUserId>>,
     ) where
         T: MessageLikeEventContent,
         OriginalSyncMessageLikeEvent<T>: IntoCommand + std::fmt::Debug,
@@ -253,7 +253,11 @@ impl MatrixMessenger {
                     Ok(command) => {
                         tracing::info!(?command, "Parsed command");
 
-                        if **bot_user != command.sender {
+                        if bot_user
+                            .as_ref()
+                            .map(|bot_user| *bot_user != command.sender)
+                            .unwrap_or(false)
+                        {
                             // We successfully parsed the incoming room event into its parts, a "command", and the remaining "message" text
                             let fut = match handlers.read() {
                                 Ok(handlers) => match handlers.get(&command.command) {

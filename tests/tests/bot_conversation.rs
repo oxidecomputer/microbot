@@ -69,7 +69,7 @@ async fn test_bot_conversation() {
 
     // This timeout ensures that the test fails if communication between the bots does not succeed or
     // if connections to the server hang
-    tokio::time::timeout(tokio::time::Duration::from_secs(90), async {
+    tokio::time::timeout(tokio::time::Duration::from_secs(30), async {
         let setup = setup(HOMESERVER, &sender, &[&bot1, &bot2]).await;
 
         let (mut bot1, mut bot1_signal) = configure_bot(&bot1).await;
