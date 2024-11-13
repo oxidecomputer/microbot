@@ -10,7 +10,6 @@ use matrix_sdk::{
 };
 use message::{CommandMessageParser, IntoCommand};
 use ruma::{
-    api::client::filter::RoomFilter,
     events::{
         room::{member::RoomMemberEventContent, message::RoomMessageEventContent},
         MessageLikeEventContent, OriginalSyncMessageLikeEvent, StrippedStateEvent,
@@ -185,7 +184,6 @@ impl MatrixMessenger {
         _event: StrippedStateEvent<RoomMemberEventContent>,
         room: Room,
         _client: Client,
-        _room_permissions: Ctx<Arc<(RoomFilter, RoomFilter)>>,
     ) {
         tracing::info!(?room, "Attempting to join room");
 
