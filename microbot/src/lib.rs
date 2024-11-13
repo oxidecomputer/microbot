@@ -35,7 +35,7 @@ mod context;
 mod message;
 
 const SYNC_CALL_TIMEOUT: u64 = 15;
-const MESSAGE_AGE_LIMIT: u8 = 30;
+const MESSAGE_AGE_LIMIT: u8 = 60;
 
 #[derive(Debug, Error)]
 pub enum MessengerError {
