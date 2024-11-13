@@ -23,7 +23,7 @@ impl MessengerContext {
     /// the same type (if any is currently stored). If data has been overwritten, the previous
     /// value will be returned.
     pub fn insert<T>(
-        &mut self,
+        &self,
         val: T,
     ) -> Result<Option<Arc<T>>, PoisonError<RwLockWriteGuard<'_, Extensions>>>
     where

@@ -213,7 +213,7 @@ impl MatrixMessenger {
     /// invocations. If data of type `T` is already stored in the shared context
     /// then the old data be replaced.
     pub fn insert_data<T>(
-        &mut self,
+        &self,
         data: T,
     ) -> Result<Option<Arc<T>>, PoisonError<RwLockWriteGuard<'_, Extensions>>>
     where
@@ -240,7 +240,7 @@ impl MatrixMessenger {
     /// derived as a blanket impl for async functions that accept a single [`CommandArgs`]
     /// argument.
     pub fn register_command<C>(
-        &mut self,
+        &self,
         command: String,
         handler: C,
     ) -> Result<(), PoisonError<RwLockWriteGuard<'_, CommandHandlers>>>
