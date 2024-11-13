@@ -183,6 +183,14 @@ impl MatrixMessenger {
         Ok(())
     }
 
+    pub fn handle(&self) -> Result<&JoinHandle<Result<(), MessengerError>>, MessengerError> {
+        if let Some(handle) = &self.handle {
+            Ok(handle)
+        } else {
+            Err(MessengerError::NotStarted)
+        }
+    }
+
     #[instrument(skip(self), fields(user = self.config.user))]
     pub fn abort(&mut self) -> Result<(), MessengerError> {
         if let Some(handle) = &self.handle {
