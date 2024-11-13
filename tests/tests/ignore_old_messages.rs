@@ -58,7 +58,8 @@ async fn test_ignores_old_messages() {
 
         bot.register_command(
             "test_cmd1".to_string(),
-            |CommandArgs { context, .. }: CommandArgs| async move {
+            |CommandArgs { command, context, .. }: CommandArgs| async move {
+                tracing::info!(?command, "Handling test_cmd1");
                 context
                     .get::<Sender<u8>>()
                     .expect("Failed to read from bot context")
@@ -72,8 +73,8 @@ async fn test_ignores_old_messages() {
 
         bot.register_command(
             "test_cmd2".to_string(),
-            |CommandArgs { context, .. }: CommandArgs| async move {
-                println!("Run test_cmd2 handler");
+            |CommandArgs { command, context, .. }: CommandArgs| async move {
+                tracing::info!(?command, "Handling test_cmd2");
                 context
                     .get::<Sender<u8>>()
                     .expect("Failed to read from bot context")
