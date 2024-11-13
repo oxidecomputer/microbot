@@ -113,10 +113,14 @@ pub async fn spawn_bot(
         bot.start().await.expect("Bot failed to run to completion");
     });
 
+    tracing::info!(signal = ?signals.borrow(), "Spawned bot");
+
     // Wait for the bot to register its command handlers
-    while signals.changed().await.is_ok() {
-        if *signals.borrow() == MatrixMessengerSignals::RegisterHandlers {
-            break;
+    if *signals.borrow() != MatrixMessengerSignals::RegisterHandlers {
+        while signals.changed().await.is_ok() {
+            if *signals.borrow() == MatrixMessengerSignals::RegisterHandlers {
+                break;
+            }
         }
     }
 

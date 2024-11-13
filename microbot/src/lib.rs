@@ -185,9 +185,9 @@ impl MatrixMessenger {
         room: Room,
         _client: Client,
     ) {
-        tracing::info!(?room, "Attempting to join room");
-
         if room.state() != RoomState::Joined {
+            tracing::info!(?room, "Attempting to join room");
+
             match room.join().await {
                 Ok(room) => tracing::info!(?room, "Joined room"),
                 Err(err) => tracing::error!(?room, ?err, "Failed to join room"),
