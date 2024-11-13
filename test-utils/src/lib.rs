@@ -67,11 +67,6 @@ pub async fn setup(homeserver: &str, sender: &str, bots: &[&str]) -> TestSetup {
 
     for bot in bots {
         let client = register(homeserver, bot, bot).await;
-        client
-            .matrix_auth()
-            .login_username(&bot, &bot)
-            .await
-            .expect("Bot failed to log in");
         bot_ids.push(
             client
                 .user_id()
@@ -81,13 +76,6 @@ pub async fn setup(homeserver: &str, sender: &str, bots: &[&str]) -> TestSetup {
     }
 
     let sender_client = register(homeserver, sender, sender).await;
-
-    sender_client
-        .matrix_auth()
-        .login_username(sender, sender)
-        .await
-        .expect("Failed to log in");
-
     let request = assign!(CreateRoomRequest::new(), { invite: bot_ids.clone() });
 
     let room_resp = sender_client
