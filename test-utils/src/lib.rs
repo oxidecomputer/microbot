@@ -1,6 +1,7 @@
-use microbot::{MatrixMessenger, MatrixMessengerSignals};
 use matrix_sdk::{
-    self, config::SyncSettings, ruma::{
+    self,
+    config::SyncSettings,
+    ruma::{
         api::client::{
             account::register::v3::Request as RegistrationRequest,
             room::create_room::v3::Request as CreateRoomRequest,
@@ -8,8 +9,10 @@ use matrix_sdk::{
         assign,
         events::room::message::RoomMessageEventContent,
         OwnedRoomId, OwnedUserId,
-    }, Client, RoomState
+    },
+    Client, RoomState,
 };
+use microbot::{MatrixMessenger, MatrixMessengerSignals};
 use ruma::api::client::{error::ErrorKind, uiaa};
 use tokio::{sync::watch::Receiver, task::JoinHandle};
 
@@ -20,18 +23,13 @@ pub struct TestSetup {
 }
 
 pub async fn make_client(homeserver: &str) -> Client {
-    let url = matrix_sdk::reqwest::Url::parse(homeserver)
-        .expect("Failed to parse homeserver url");
+    let url = matrix_sdk::reqwest::Url::parse(homeserver).expect("Failed to parse homeserver url");
     let client = Client::new(url).await.expect("Failed to construct client");
 
     client
 }
 
-pub async fn register(
-    homeserver: &str,
-    user: &str,
-    password: &str,
-) -> Client {
+pub async fn register(homeserver: &str, user: &str, password: &str) -> Client {
     let client = make_client(homeserver).await;
 
     let request = assign!(RegistrationRequest::new(), {
@@ -60,17 +58,22 @@ pub async fn register(
     client
 }
 
-pub async fn setup(
-    homeserver: &str,
-    sender: &str,
-    bots: &[&str],
-) -> TestSetup {
+pub async fn setup(homeserver: &str, sender: &str, bots: &[&str]) -> TestSetup {
     let mut bot_ids = vec![];
 
     for bot in bots {
         let client = register(homeserver, bot, bot).await;
-        client.matrix_auth().login_username(&bot, &bot).await.expect("Bot failed to log in");
-        bot_ids.push(client.user_id().expect("Failed to get bot id from client").to_owned());
+        client
+            .matrix_auth()
+            .login_username(&bot, &bot)
+            .await
+            .expect("Bot failed to log in");
+        bot_ids.push(
+            client
+                .user_id()
+                .expect("Failed to get bot id from client")
+                .to_owned(),
+        );
     }
 
     let sender_client = register(homeserver, sender, sender).await;
@@ -100,7 +103,9 @@ pub async fn setup(
     }
 }
 
-pub async fn spawn_bot(mut bot: MatrixMessenger) -> (JoinHandle<()>, Receiver<MatrixMessengerSignals>) {
+pub async fn spawn_bot(
+    mut bot: MatrixMessenger,
+) -> (JoinHandle<()>, Receiver<MatrixMessengerSignals>) {
     let mut signals = bot.signals();
 
     let bot_handle = tokio::spawn(async move {
@@ -118,11 +123,7 @@ pub async fn spawn_bot(mut bot: MatrixMessenger) -> (JoinHandle<()>, Receiver<Ma
 }
 
 impl TestSetup {
-    pub async fn send_cmd(
-        &self,
-        cmd: &str,
-        message: &str,
-    ) {
+    pub async fn send_cmd(&self, cmd: &str, message: &str) {
         let room = self
             .client
             .get_room(&self.room)
@@ -131,12 +132,10 @@ impl TestSetup {
         tracing::debug!(?cmd, ?message, "Sending test command");
 
         if room.state() == RoomState::Joined {
-            room.send(
-                RoomMessageEventContent::text_plain(format!(
-                    "!{} {}",
-                    cmd, message
-                )),
-            )
+            room.send(RoomMessageEventContent::text_plain(format!(
+                "!{} {}",
+                cmd, message
+            )))
             .await
             .expect("Failed to send test command");
         } else {

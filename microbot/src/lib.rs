@@ -6,27 +6,29 @@ use command::CommandHandlers;
 use context::MessengerContext;
 use http::Extensions;
 use matrix_sdk::{
-    config::SyncSettings,
-    event_handler::Ctx,
-    Client, ClientBuildError, LoopCtrl, Room, RoomState,
+    config::SyncSettings, event_handler::Ctx, Client, ClientBuildError, LoopCtrl, Room, RoomState,
 };
 use message::{CommandMessageParser, IntoCommand};
 use ruma::{
     api::client::filter::RoomFilter,
     events::{
-        room::{member::RoomMemberEventContent, message::RoomMessageEventContent}, MessageLikeEventContent, OriginalSyncMessageLikeEvent, StrippedStateEvent
+        room::{member::RoomMemberEventContent, message::RoomMessageEventContent},
+        MessageLikeEventContent, OriginalSyncMessageLikeEvent, StrippedStateEvent,
     },
     OwnedUserId,
 };
 use serde::Deserialize;
-use tracing::instrument;
 use std::{
     future::Future,
     sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard},
     time::{Duration, Instant},
 };
 use thiserror::Error;
-use tokio::{sync::watch::{Receiver, Sender}, task::JoinHandle};
+use tokio::{
+    sync::watch::{Receiver, Sender},
+    task::JoinHandle,
+};
+use tracing::instrument;
 
 mod command;
 pub use command::{CommandArgs, CommandFn, CommandHandler};
@@ -138,7 +140,7 @@ impl MatrixMessenger {
         let last_synced = Arc::new(RwLock::new(Instant::now()));
         let sync_monitor = last_synced.clone();
 
-        let sync_signal = self.signal.clone();        
+        let sync_signal = self.signal.clone();
         let _handle = tokio::spawn(async move {
             tracing::info!("Spawning sync task");
             let settings = SyncSettings::default()
@@ -172,7 +174,9 @@ impl MatrixMessenger {
     }
 
     /// Returns the instant of when this bot successfully synced with the configured server
-    pub fn last_synced(&self) -> Result<Option<Instant>, PoisonError<RwLockReadGuard<'_, Option<Instant>>>> {
+    pub fn last_synced(
+        &self,
+    ) -> Result<Option<Instant>, PoisonError<RwLockReadGuard<'_, Option<Instant>>>> {
         self.last_synced.read().map(|item| *item)
     }
 
@@ -212,7 +216,11 @@ impl MatrixMessenger {
         tracing::debug!("Handle room event");
 
         if room.state() == RoomState::Joined {
-            let expired = event.unsigned.age.map(|seconds| seconds.abs() < MESSAGE_AGE_LIMIT.into()).unwrap_or(true);
+            let expired = event
+                .unsigned
+                .age
+                .map(|seconds| seconds.abs() < MESSAGE_AGE_LIMIT.into())
+                .unwrap_or(true);
 
             // If this event has occured too far in the past (or the future) then we drop the event
             if !expired {
@@ -221,7 +229,7 @@ impl MatrixMessenger {
                 match parsed {
                     Ok(command) => {
                         tracing::info!(?command, "Parsed command");
-    
+
                         if **bot_user != command.sender {
                             // We successfully parsed the incoming room event into its parts, a "command", and the remaining "message" text
                             if let Some(handler) = handlers.get(&command.command) {
