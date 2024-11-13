@@ -3,19 +3,19 @@ use context::MessengerContext;
 use http::Extensions;
 use matrix_sdk::{
     config::SyncSettings,
-    event_handler::{Ctx, SyncEvent},
+    event_handler::Ctx,
     Client, ClientBuildError, LoopCtrl, Room, RoomState,
 };
 use message::{CommandMessageParser, IntoCommand};
 use ruma::{
     api::client::filter::RoomFilter,
     events::{
-        room::{member::RoomMemberEventContent, message::OriginalSyncRoomMessageEvent},
-        StrippedStateEvent,
+        room::{member::RoomMemberEventContent, message::RoomMessageEventContent}, MessageLikeEventContent, OriginalSyncMessageLikeEvent, StrippedStateEvent
     },
     OwnedUserId,
 };
 use serde::Deserialize;
+use tracing::instrument;
 use std::{
     future::Future,
     sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard},
@@ -29,6 +29,7 @@ mod context;
 mod message;
 
 const SYNC_CALL_TIMEOUT: u64 = 15;
+const MESSAGE_AGE_LIMIT: u8 = 30;
 
 #[derive(Debug, Error)]
 pub enum MessengerError {
@@ -93,7 +94,7 @@ impl MatrixMessenger {
         client.add_event_handler_context(context.clone());
 
         tracing::info!("Registering event handler");
-        client.add_event_handler(Self::handle_room_message_event::<OriginalSyncRoomMessageEvent>);
+        client.add_event_handler(Self::handle_room_message_event::<RoomMessageEventContent>);
 
         let sync_client = client.clone();
 
@@ -149,8 +150,9 @@ impl MatrixMessenger {
     /// attempt ot parse it into a [Command]. If it can, then it will look for the handlers that
     /// is registered for that command and run it. Only a single handler can be registered for a
     /// given command at a time
+    #[instrument(skip(client, handlers, extensions, parser, bot_user))]
     async fn handle_room_message_event<T>(
-        event: T,
+        event: OriginalSyncMessageLikeEvent<T>,
         room: Room,
         client: Client,
         handlers: Ctx<Arc<CommandHandlers>>,
@@ -158,38 +160,46 @@ impl MatrixMessenger {
         parser: Ctx<Arc<CommandMessageParser>>,
         bot_user: Ctx<Arc<OwnedUserId>>,
     ) where
-        T: SyncEvent + IntoCommand + std::fmt::Debug,
-        <T as IntoCommand>::Error: std::fmt::Debug,
+        T: MessageLikeEventContent,
+        OriginalSyncMessageLikeEvent<T>: IntoCommand + std::fmt::Debug,
+        <OriginalSyncMessageLikeEvent<T> as IntoCommand>::Error: std::fmt::Debug,
     {
-        tracing::debug!(?event, "Handle room event");
+        tracing::debug!("Handle room event");
 
         if room.state() == RoomState::Joined {
-            let parsed = event.into_command(&parser);
+            let expired = event.unsigned.age.map(|seconds| seconds.abs() < MESSAGE_AGE_LIMIT.into()).unwrap_or(true);
 
-            match parsed {
-                Ok(command) => {
-                    tracing::info!(?command, "Parsed command");
+            // If this event has occured too far in the past (or the future) then we drop the event
+            if !expired {
+                let parsed = event.into_command(&parser);
 
-                    if **bot_user != command.sender {
-                        // We successfully parsed the incoming room event into its parts, a "command", and the remaining "message" text
-                        if let Some(handler) = handlers.get(&command.command) {
-                            handler(CommandArgs {
-                                command,
-                                room,
-                                client,
-                                context: extensions.clone(),
-                            })
-                            .await;
+                match parsed {
+                    Ok(command) => {
+                        tracing::info!(?command, "Parsed command");
+    
+                        if **bot_user != command.sender {
+                            // We successfully parsed the incoming room event into its parts, a "command", and the remaining "message" text
+                            if let Some(handler) = handlers.get(&command.command) {
+                                handler(CommandArgs {
+                                    command,
+                                    room,
+                                    client,
+                                    context: extensions.clone(),
+                                })
+                                .await;
+                            } else {
+                                tracing::info!(?command, "Did not find handler for command");
+                            }
                         } else {
-                            tracing::info!(?command, "Did not find handler for command");
+                            tracing::info!("Ignoring command that was sent by this bot")
                         }
-                    } else {
-                        tracing::info!("Ignoring command that was sent by this bot")
+                    }
+                    Err(err) => {
+                        tracing::debug!(?err, "Failed to parse event");
                     }
                 }
-                Err(err) => {
-                    tracing::debug!(?err, "Failed to parse event");
-                }
+            } else {
+                tracing::warn!("Event occured too far in the past or future to process");
             }
         }
     }
