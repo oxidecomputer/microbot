@@ -2,8 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use matrix_chat_bot::{CommandArgs, MatrixBot};
-use matrix_chat_bot_test_utils::{setup, spawn_bot};
+use microbot::{CommandArgs, MatrixConfig, MatrixMessenger};
+use microbot_test_utils::{setup, spawn_bot};
 use rand::{distributions::Alphanumeric, Rng};
 use ruma::events::room::message::RoomMessageEventContent;
 use tokio::sync::{
@@ -18,20 +18,18 @@ static HOMESERVER: &'static str = "http://localhost:8008";
 // In response to this command the two bots will command messages to the room triggering
 // handlers of each other.
 
-async fn configure_bot(bot_name: &str) -> (MatrixBot, Receiver<bool>) {
+async fn configure_bot(bot_name: &str) -> (MatrixMessenger, Receiver<bool>) {
     let (tx, rx) = mpsc::channel::<bool>(1);
 
-    let mut bot = MatrixBot::new(HOMESERVER)
-        .await
-        .expect("Failed to create chat bot");
-    bot.set_prefix(Some("!".to_string()))
-        .expect("Failed to set command prefix");
+    let bot = MatrixMessenger::new(MatrixConfig {
+        url: HOMESERVER.to_string(),
+        user: bot_name.to_string(),
+        password: bot_name.to_string(),
+        display_name: bot_name.to_string(),
+        command_prefix: Some("!".to_string()),
+    });
 
-    bot.login(bot_name, bot_name)
-        .await
-        .expect("Failed to login to homeserver");
-
-    bot.insert_data(tx);
+    bot.insert_data(tx).expect("Failed to add bot context data");
 
     (bot, rx)
 }
@@ -49,6 +47,7 @@ async fn test_bot_conversation() {
         rand::thread_rng()
             .sample_iter(&Alphanumeric)
             .take(24)
+            .map(|b| char::from(b))
             .collect::<String>()
     );
     let bot1 = format!(
@@ -56,6 +55,7 @@ async fn test_bot_conversation() {
         rand::thread_rng()
             .sample_iter(&Alphanumeric)
             .take(24)
+            .map(|b| char::from(b))
             .collect::<String>()
     );
     let bot2 = format!(
@@ -63,6 +63,7 @@ async fn test_bot_conversation() {
         rand::thread_rng()
             .sample_iter(&Alphanumeric)
             .take(24)
+            .map(|b| char::from(b))
             .collect::<String>()
     );
 
@@ -71,83 +72,79 @@ async fn test_bot_conversation() {
     tokio::time::timeout(tokio::time::Duration::from_secs(30), async {
         let setup = setup(HOMESERVER, &sender, &[&bot1, &bot2]).await;
 
-        let (mut bot1, mut bot1_signal) = configure_bot(&bot1).await;
+        let (bot1, mut bot1_signal) = configure_bot(&bot1).await;
 
         bot1.register_command(
             "start".to_string(),
             |CommandArgs { room, .. }: CommandArgs| async move {
-                room.send(
-                    RoomMessageEventContent::text_plain("!hi_bot_2"),
-                    None,
-                )
-                .await
-                .expect("Failed to send hi to bot 2");
+                room.send(RoomMessageEventContent::text_plain("!hi_bot_2"))
+                    .await
+                    .expect("Failed to send hi to bot 2");
             },
-        );
+        )
+        .expect("Failed to register command");
 
         bot1.register_command(
             "hi_bot_1".to_string(),
             |CommandArgs { room, .. }: CommandArgs| async move {
-                room.send(
-                    RoomMessageEventContent::text_plain("!goodbye_bot_2"),
-                    None,
-                )
-                .await
-                .expect("Failed to send goodbye to bot 2");
+                room.send(RoomMessageEventContent::text_plain("!goodbye_bot_2"))
+                    .await
+                    .expect("Failed to send goodbye to bot 2");
             },
-        );
+        )
+        .expect("Failed to register command");
 
         bot1.register_command(
             "goodbye_bot_1".to_string(),
             |CommandArgs { context, .. }: CommandArgs| async move {
                 let shutdown = context
                     .get::<Sender<bool>>()
+                    .expect("Failed to read from bot context")
                     .expect("Failed to find channel in bot context");
                 shutdown
                     .send(true)
                     .await
                     .expect("Failed to send message received signal");
             },
-        );
+        )
+        .expect("Failed to register command");
 
-        let (mut bot2, mut bot2_signal) = configure_bot(&bot2).await;
+        let (bot2, mut bot2_signal) = configure_bot(&bot2).await;
 
         bot2.register_command(
             "start".to_string(),
             |CommandArgs { room, .. }: CommandArgs| async move {
-                room.send(
-                    RoomMessageEventContent::text_plain("!hi_bot_1"),
-                    None,
-                )
-                .await
-                .expect("Failed to send hi to bot 1");
+                room.send(RoomMessageEventContent::text_plain("!hi_bot_1"))
+                    .await
+                    .expect("Failed to send hi to bot 1");
             },
-        );
+        )
+        .expect("Failed to register command");
 
         bot2.register_command(
             "hi_bot_2".to_string(),
             |CommandArgs { room, .. }: CommandArgs| async move {
-                room.send(
-                    RoomMessageEventContent::text_plain("!goodbye_bot_1"),
-                    None,
-                )
-                .await
-                .expect("Failed to send goodbye to bot 1");
+                room.send(RoomMessageEventContent::text_plain("!goodbye_bot_1"))
+                    .await
+                    .expect("Failed to send goodbye to bot 1");
             },
-        );
+        )
+        .expect("Failed to register command");
 
         bot2.register_command(
             "goodbye_bot_2".to_string(),
             |CommandArgs { context, .. }: CommandArgs| async move {
                 let shutdown = context
                     .get::<Sender<bool>>()
+                    .expect("Failed to read from bot context")
                     .expect("Failed to find channel in bot context");
                 shutdown
                     .send(true)
                     .await
                     .expect("Failed to send message received signal");
             },
-        );
+        )
+        .expect("Failed to register command");
 
         let (bot1_handle, _) = spawn_bot(bot1).await;
         let (bot2_handle, _) = spawn_bot(bot2).await;

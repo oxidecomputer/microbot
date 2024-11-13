@@ -1,7 +1,8 @@
 [workspace]
 members = [
   "microbot",
-  "test-utils"
+  "test-utils",
+  "tests"
 ]
 resolver = "2"
 

@@ -1,0 +1,16 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+matrix-sdk = { workspace = true }
+microbot = { path = "../microbot" }
+microbot-test-utils = { path = "../test-utils" }
+ruma = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+rand = "0.8.5"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }

@@ -2,12 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use matrix_chat_bot::{CommandArgs, MatrixBot};
+use microbot::{CommandArgs, MatrixConfig, MatrixMessenger};
+use microbot_test_utils::{setup, spawn_bot};
 use rand::{distributions::Alphanumeric, Rng};
 use tokio::sync::{mpsc, mpsc::Sender};
 use tracing_subscriber::filter::EnvFilter;
-
-use matrix_chat_bot_test_utils::{setup, spawn_bot};
 
 static HOMESERVER: &'static str = "http://localhost:8008";
 
@@ -24,6 +23,7 @@ async fn test_ignores_old_messages() {
         rand::thread_rng()
             .sample_iter(&Alphanumeric)
             .take(24)
+            .map(|b| char::from(b))
             .collect::<String>()
     );
     let receiver = format!(
@@ -31,6 +31,7 @@ async fn test_ignores_old_messages() {
         rand::thread_rng()
             .sample_iter(&Alphanumeric)
             .take(24)
+            .map(|b| char::from(b))
             .collect::<String>()
     );
 
@@ -45,29 +46,29 @@ async fn test_ignores_old_messages() {
 
         let (tx, mut rx) = mpsc::channel::<u8>(1);
 
-        let mut bot = MatrixBot::new(HOMESERVER)
-            .await
-            .expect("Failed to create chat bot");
-        bot.set_prefix(Some("!".to_string()))
-            .expect("Failed to set command prefix");
+        let bot = MatrixMessenger::new(MatrixConfig {
+            url: HOMESERVER.to_string(),
+            user: receiver.to_string(),
+            password: receiver.to_string(),
+            display_name: receiver.to_string(),
+            command_prefix: Some("!".to_string()),
+        });
 
-        bot.login(&receiver, &receiver)
-            .await
-            .expect("Failed to login to homeserver");
-
-        bot.insert_data(tx);
+        bot.insert_data(tx).expect("Failed to add bot context data");
 
         bot.register_command(
             "test_cmd1".to_string(),
             |CommandArgs { context, .. }: CommandArgs| async move {
                 context
                     .get::<Sender<u8>>()
+                    .expect("Failed to read from bot context")
                     .expect("Failed to find channel in bot context for cmd1")
                     .send(1)
                     .await
                     .expect("Failed to send message received signal from cmd1");
             },
-        );
+        )
+        .expect("Failed to register command");
 
         bot.register_command(
             "test_cmd2".to_string(),
@@ -75,12 +76,14 @@ async fn test_ignores_old_messages() {
                 println!("Run test_cmd2 handler");
                 context
                     .get::<Sender<u8>>()
+                    .expect("Failed to read from bot context")
                     .expect("Failed to find channel in bot context for cmd2")
                     .send(2)
                     .await
                     .expect("Failed to send message received signal from cmd2");
             },
-        );
+        )
+        .expect("Failed to register command");
 
         let (bot_handle, _) = spawn_bot(bot).await;
 
