@@ -111,11 +111,13 @@ impl MatrixMessenger {
             .login_username(&self.config.user, &self.config.password)
             .initial_device_display_name(&self.config.display_name)
             .await?;
+
+        tracing::info!("Add room join handler");
         client.add_event_handler(Self::handle_autojoin_event);
 
         tracing::info!("Logged in. Starting initial sync");
         let response = client.sync_once(SyncSettings::default()).await?;
-        tracing::info!("Completed initial sync");
+        tracing::info!(?response, "Completed initial sync");
 
         tracing::info!("Registering context data");
         let mut parser = CommandMessageParser::default();
