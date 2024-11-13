@@ -1,4 +1,8 @@
-use command::{CommandArgs, CommandFn, CommandHandlers};
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+use command::CommandHandlers;
 use context::MessengerContext;
 use http::Extensions;
 use matrix_sdk::{
@@ -25,6 +29,7 @@ use thiserror::Error;
 use tokio::task::JoinHandle;
 
 mod command;
+pub use command::{CommandArgs, CommandFn, CommandHandler};
 mod context;
 mod message;
 
