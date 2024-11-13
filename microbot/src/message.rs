@@ -56,6 +56,7 @@ impl IntoCommand for OriginalSyncRoomMessageEvent {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct CommandMessageParser {
     prefix: Option<String>,
     command_pattern: Regex,

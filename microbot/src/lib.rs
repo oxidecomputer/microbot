@@ -124,9 +124,9 @@ impl MatrixMessenger {
         }
         let user_id = client.user_id().map(|id| id.to_owned());
 
-        client.add_event_handler_context(Arc::new(user_id));
-        client.add_event_handler_context(Arc::new(self.handlers.clone()));
-        client.add_event_handler_context(Arc::new(parser));
+        client.add_event_handler_context(user_id);
+        client.add_event_handler_context(self.handlers.clone());
+        client.add_event_handler_context(parser);
         client.add_event_handler_context(self.context.clone());
 
         tracing::info!("Registering event handler");
@@ -204,10 +204,10 @@ impl MatrixMessenger {
         event: OriginalSyncMessageLikeEvent<T>,
         room: Room,
         client: Client,
-        handlers: Ctx<Arc<CommandHandlers>>,
+        handlers: Ctx<Arc<RwLock<CommandHandlers>>>,
         extensions: Ctx<MessengerContext>,
-        parser: Ctx<Arc<CommandMessageParser>>,
-        bot_user: Ctx<Arc<OwnedUserId>>,
+        parser: Ctx<CommandMessageParser>,
+        bot_user: Ctx<OwnedUserId>,
     ) where
         T: MessageLikeEventContent,
         OriginalSyncMessageLikeEvent<T>: IntoCommand + std::fmt::Debug,
@@ -232,16 +232,34 @@ impl MatrixMessenger {
 
                         if **bot_user != command.sender {
                             // We successfully parsed the incoming room event into its parts, a "command", and the remaining "message" text
-                            if let Some(handler) = handlers.get(&command.command) {
-                                handler(CommandArgs {
-                                    command,
-                                    room,
-                                    client,
-                                    context: extensions.clone(),
-                                })
-                                .await;
-                            } else {
-                                tracing::info!(?command, "Did not find handler for command");
+                            let fut = match handlers.read() {
+                                Ok(handlers) => match handlers.get(&command.command) {
+                                    Some(handler) => Some(handler(CommandArgs {
+                                        command,
+                                        room,
+                                        client,
+                                        context: extensions.clone(),
+                                    })),
+                                    None => {
+                                        tracing::info!(
+                                            ?command,
+                                            "Did not find handler for command"
+                                        );
+                                        None
+                                    }
+                                },
+                                Err(err) => {
+                                    tracing::error!(
+                                        ?err,
+                                        ?command,
+                                        "Did not find handler for command"
+                                    );
+                                    None
+                                }
+                            };
+
+                            if let Some(fut) = fut {
+                                fut.await;
                             }
                         } else {
                             tracing::info!("Ignoring command that was sent by this bot")
