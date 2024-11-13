@@ -165,6 +165,7 @@ impl MatrixMessenger {
                     let signal = sync_signal.clone();
                     async move {
                         let mut lock = sync_monitor.write().expect("Sync monitor lock failed");
+                        tracing::trace!(time = ?*lock, "Handling sync");
                         *lock = Instant::now();
                         signal.send(MatrixMessengerSignals::Sync).expect("Failed to send signal. This should only ever happen if the internal receiver has gone missing");
 
