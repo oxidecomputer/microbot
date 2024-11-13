@@ -30,4 +30,4 @@ jobs:
           command: test
         env:
           RUST_BACKTRACE: 1
-          RUST_LOG: info,micro=trace,matrix=trace,ruma=trace
+          RUST_LOG: info,micro=trace,matrix=trace,ruma=trace,test=trace
