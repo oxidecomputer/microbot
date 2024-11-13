@@ -115,9 +115,15 @@ impl MatrixMessenger {
         tracing::info!("Add room join handler");
         client.add_event_handler(Self::handle_autojoin_event);
 
-        tracing::info!("Logged in. Starting initial sync");
+        tracing::info!("Logged in. Starting initial room sync");
         let response = client.sync_once(SyncSettings::default()).await?;
-        tracing::info!(?response, "Completed initial sync");
+        tracing::info!(?response, "Completed initial room sync");
+
+        tracing::info!("Starting initial message sync");
+        let response = client
+            .sync_once(SyncSettings::default().token(response.next_batch))
+            .await?;
+        tracing::info!(?response, "Completed initial message sync");
 
         tracing::info!("Registering context data");
         let mut parser = CommandMessageParser::default();

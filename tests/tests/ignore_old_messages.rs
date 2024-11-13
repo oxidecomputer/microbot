@@ -58,7 +58,9 @@ async fn test_ignores_old_messages() {
 
         bot.register_command(
             "test_cmd1".to_string(),
-            |CommandArgs { command, context, .. }: CommandArgs| async move {
+            |CommandArgs {
+                 command, context, ..
+             }: CommandArgs| async move {
                 tracing::info!(?command, "Handling test_cmd1");
                 context
                     .get::<Sender<u8>>()
@@ -73,7 +75,9 @@ async fn test_ignores_old_messages() {
 
         bot.register_command(
             "test_cmd2".to_string(),
-            |CommandArgs { command, context, .. }: CommandArgs| async move {
+            |CommandArgs {
+                 command, context, ..
+             }: CommandArgs| async move {
                 tracing::info!(?command, "Handling test_cmd2");
                 context
                     .get::<Sender<u8>>()
