@@ -16,7 +16,3 @@ serde = { version = "1.0.215", features = ["derive"] }
 thiserror = "2.0.3"
 tokio = "1.41.1"
 tracing = "0.1.40"
-
-[workspace.dev-dependencies]
-rand = "0.8.5"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }

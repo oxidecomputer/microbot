@@ -38,7 +38,7 @@ async fn configure_bot(bot_name: &str) -> (MatrixMessenger, Receiver<bool>) {
 async fn test_bot_conversation() {
     tracing_subscriber::fmt()
         .pretty()
-        .with_env_filter(EnvFilter::default())
+        .with_env_filter(EnvFilter::from_default_env())
         .with_test_writer()
         .init();
 

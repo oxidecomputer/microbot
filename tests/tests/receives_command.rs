@@ -14,7 +14,7 @@ static HOMESERVER: &'static str = "http://localhost:8008";
 async fn test_receives_command() {
     tracing_subscriber::fmt()
         .pretty()
-        .with_env_filter(EnvFilter::default())
+        .with_env_filter(EnvFilter::from_default_env())
         .with_test_writer()
         .init();
 

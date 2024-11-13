@@ -19,6 +19,7 @@ use matrix_sdk::{
 use microbot::{MatrixMessenger, MatrixMessengerSignals};
 use ruma::api::client::{error::ErrorKind, uiaa};
 use tokio::{sync::watch::Receiver, task::JoinHandle};
+use tracing::instrument;
 
 pub struct TestSetup {
     pub client: Client,
@@ -33,7 +34,10 @@ pub async fn make_client(homeserver: &str) -> Client {
     client
 }
 
+#[instrument]
 pub async fn register(homeserver: &str, user: &str, password: &str) -> Client {
+    tracing::info!("Registering user");
+
     let client = make_client(homeserver).await;
 
     let request = assign!(RegistrationRequest::new(), {
@@ -62,6 +66,7 @@ pub async fn register(homeserver: &str, user: &str, password: &str) -> Client {
     client
 }
 
+#[instrument]
 pub async fn setup(homeserver: &str, sender: &str, bots: &[&str]) -> TestSetup {
     let mut bot_ids = vec![];
 
@@ -75,6 +80,8 @@ pub async fn setup(homeserver: &str, sender: &str, bots: &[&str]) -> TestSetup {
         );
     }
 
+    tracing::info!("Registered bots");
+
     let sender_client = register(homeserver, sender, sender).await;
     let request = assign!(CreateRoomRequest::new(), { invite: bot_ids.clone() });
 
@@ -82,6 +89,8 @@ pub async fn setup(homeserver: &str, sender: &str, bots: &[&str]) -> TestSetup {
         .create_room(request)
         .await
         .expect("Failed to create test room");
+
+    tracing::info!("Created room");
 
     sender_client
         .sync_once(SyncSettings::default())
