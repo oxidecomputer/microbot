@@ -96,6 +96,7 @@ impl MatrixMessenger {
         }
     }
 
+    #[instrument(skip(self), fields(user = self.config.user))]
     pub async fn start(&mut self) -> Result<(), MessengerError> {
         let client = Client::builder()
             .homeserver_url(&self.config.url)
@@ -132,6 +133,7 @@ impl MatrixMessenger {
         client.add_event_handler(Self::handle_room_message_event::<RoomMessageEventContent>);
 
         self.signal.send(MatrixMessengerSignals::RegisterHandlers).expect("Failed to send signal. This should only ever happen if the internal receiver has gone missing");
+        tracing::info!("Sent RegisterHandlers signal");
 
         let sync_client = client.clone();
 
@@ -142,6 +144,8 @@ impl MatrixMessenger {
         let sync_signal = self.signal.clone();
         let _handle = tokio::spawn(async move {
             tracing::info!("Spawning sync task");
+            let stop_signal = sync_signal.clone();
+
             let settings = SyncSettings::default()
                 .token(response.next_batch)
                 .timeout(Duration::from_secs(SYNC_CALL_TIMEOUT));
@@ -158,10 +162,12 @@ impl MatrixMessenger {
                     }
                 })
                 .await?;
+
+            stop_signal.send(MatrixMessengerSignals::Stop).expect("Failed to send signal. This should only ever happen if the internal receiver has gone missing");
+            tracing::info!("Sending Stop signal");
+
             Ok::<(), MessengerError>(())
         });
-
-        self.signal.send(MatrixMessengerSignals::Stop).expect("Failed to send signal. This should only ever happen if the internal receiver has gone missing");
 
         Ok(())
     }
