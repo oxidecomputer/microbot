@@ -1,0 +1,30 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: cargo test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1
+        with:
+          toolchain: stable
+      
+      - uses: michaelkaye/setup-matrix-synapse@main
+        with:
+          uploadLogs: true
+          httpPort: 8008
+          disableRateLimiting: true
+          customConfig: |
+            {
+              "enable_registration_without_verification": true,
+              "enable_registration": true
+            }
+
+      - uses: actions-rs/cargo@844f36862e911db73fe0815f00a4a2602c279505 # v1
+        with:
+          command: test

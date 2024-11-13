@@ -26,7 +26,7 @@ use std::{
     time::{Duration, Instant},
 };
 use thiserror::Error;
-use tokio::task::JoinHandle;
+use tokio::{sync::watch::{Receiver, Sender}, task::JoinHandle};
 
 mod command;
 pub use command::{CommandArgs, CommandFn, CommandHandler};
@@ -38,6 +38,8 @@ const MESSAGE_AGE_LIMIT: u8 = 30;
 
 #[derive(Debug, Error)]
 pub enum MessengerError {
+    #[error("Bot has already been started")]
+    AlreadyStarted,
     #[error(transparent)]
     Builder(#[from] ClientBuildError),
     #[error(transparent)]
@@ -57,25 +59,53 @@ pub struct MatrixConfig {
     pub command_prefix: Option<String>,
 }
 
+/// Signals that are sent out by the bot to allow for external monitoring of its behavior
+#[derive(Debug, PartialEq)]
+pub enum MatrixMessengerSignals {
+    Create,
+    RegisterHandlers,
+    Start,
+    Stop,
+    Sync,
+}
+
 pub struct MatrixMessenger {
+    config: MatrixConfig,
     context: MessengerContext,
-    _handle: JoinHandle<Result<(), MessengerError>>,
+    _handle: Option<JoinHandle<Result<(), MessengerError>>>,
     handlers: Arc<RwLock<CommandHandlers>>,
-    last_synced: Arc<RwLock<Instant>>,
+    signal: Sender<MatrixMessengerSignals>,
+    watch: Receiver<MatrixMessengerSignals>,
+    last_synced: Arc<RwLock<Option<Instant>>>,
 }
 
 impl MatrixMessenger {
-    pub async fn new(config: MatrixConfig) -> Result<Self, MessengerError> {
+    pub fn new(config: MatrixConfig) -> Self {
+        tracing::info!("Creating bot signals channel");
+        let (tx, rx) = tokio::sync::watch::channel(MatrixMessengerSignals::Create);
+
+        Self {
+            config,
+            context: MessengerContext::new(),
+            _handle: None,
+            handlers: Arc::new(RwLock::new(CommandHandlers::new())),
+            signal: tx,
+            watch: rx,
+            last_synced: Arc::new(RwLock::new(None)),
+        }
+    }
+
+    pub async fn start(&mut self) -> Result<(), MessengerError> {
         let client = Client::builder()
-            .homeserver_url(&config.url)
+            .homeserver_url(&self.config.url)
             .build()
             .await?;
 
         tracing::info!("Logging in to server");
         client
             .matrix_auth()
-            .login_username(&config.user, &config.password)
-            .initial_device_display_name(&config.display_name)
+            .login_username(&self.config.user, &self.config.password)
+            .initial_device_display_name(&self.config.display_name)
             .await?;
         client.add_event_handler(Self::handle_autojoin_event);
 
@@ -84,10 +114,8 @@ impl MatrixMessenger {
         tracing::info!("Completed initial sync");
 
         tracing::info!("Registering context data");
-        let context = MessengerContext::new();
-        let handlers = Arc::new(RwLock::new(CommandHandlers::new()));
         let mut parser = CommandMessageParser::default();
-        if let Some(prefix) = &config.command_prefix {
+        if let Some(prefix) = &self.config.command_prefix {
             parser
                 .set_prefix(Some(prefix.clone()))
                 .map_err(MessengerError::PrefixConfig)?;
@@ -95,29 +123,36 @@ impl MatrixMessenger {
         let user_id = client.user_id().map(|id| id.to_owned());
 
         client.add_event_handler_context(Arc::new(user_id));
-        client.add_event_handler_context(Arc::new(handlers.clone()));
+        client.add_event_handler_context(Arc::new(self.handlers.clone()));
         client.add_event_handler_context(Arc::new(parser));
-        client.add_event_handler_context(context.clone());
+        client.add_event_handler_context(self.context.clone());
 
         tracing::info!("Registering event handler");
         client.add_event_handler(Self::handle_room_message_event::<RoomMessageEventContent>);
+
+        self.signal.send(MatrixMessengerSignals::RegisterHandlers).expect("Failed to send signal. This should only ever happen if the internal receiver has gone missing");
 
         let sync_client = client.clone();
 
         tracing::info!("Preparing sync task");
         let last_synced = Arc::new(RwLock::new(Instant::now()));
         let sync_monitor = last_synced.clone();
+
+        let sync_signal = self.signal.clone();        
         let _handle = tokio::spawn(async move {
             tracing::info!("Spawning sync task");
             let settings = SyncSettings::default()
                 .token(response.next_batch)
                 .timeout(Duration::from_secs(SYNC_CALL_TIMEOUT));
             sync_client
-                .sync_with_callback(settings, |_| {
+                .sync_with_callback(settings, move |_| {
                     let sync_monitor = sync_monitor.clone();
+                    let signal = sync_signal.clone();
                     async move {
                         let mut lock = sync_monitor.write().expect("Sync monitor lock failed");
                         *lock = Instant::now();
+                        signal.send(MatrixMessengerSignals::Sync).expect("Failed to send signal. This should only ever happen if the internal receiver has gone missing");
+
                         LoopCtrl::Continue
                     }
                 })
@@ -125,15 +160,19 @@ impl MatrixMessenger {
             Ok::<(), MessengerError>(())
         });
 
-        Ok(Self {
-            context,
-            _handle,
-            handlers,
-            last_synced,
-        })
+        self.signal.send(MatrixMessengerSignals::Stop).expect("Failed to send signal. This should only ever happen if the internal receiver has gone missing");
+
+        Ok(())
     }
 
-    pub fn last_synced(&self) -> Result<Instant, PoisonError<RwLockReadGuard<'_, Instant>>> {
+    /// Returns a signal receiver that can be used to monitor the behaviors of the bot while it is
+    /// executing
+    pub fn signals(&self) -> Receiver<MatrixMessengerSignals> {
+        self.watch.clone()
+    }
+
+    /// Returns the instant of when this bot successfully synced with the configured server
+    pub fn last_synced(&self) -> Result<Option<Instant>, PoisonError<RwLockReadGuard<'_, Option<Instant>>>> {
         self.last_synced.read().map(|item| *item)
     }
 

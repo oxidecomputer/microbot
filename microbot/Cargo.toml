@@ -1,0 +1,15 @@
+[package]
+name = "microbot"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+http = { workspace = true }
+matrix-sdk = { workspace = true }
+regex = { workspace = true }
+ruma = { workspace = true }
+ruma-common = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }

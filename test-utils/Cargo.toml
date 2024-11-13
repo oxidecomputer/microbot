@@ -1,0 +1,11 @@
+[package]
+name = "microbot-test-utils"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+matrix-sdk = { workspace = true }
+microbot = { path = "../microbot" }
+ruma = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
