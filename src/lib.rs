@@ -81,6 +81,7 @@ impl MatrixMessenger {
 
         tracing::info!("Logged in. Starting initial sync");
         let response = client.sync_once(SyncSettings::default()).await?;
+        tracing::info!("Completed initial sync");
 
         tracing::info!("Registering context data");
         let context = MessengerContext::new();
