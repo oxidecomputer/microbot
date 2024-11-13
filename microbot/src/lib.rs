@@ -47,6 +47,8 @@ pub enum MessengerError {
     Client(#[from] matrix_sdk::Error),
     #[error(transparent)]
     Config(#[from] matrix_sdk::IdParseError),
+    #[error("Bot has not been started")]
+    NotStarted,
     #[error("Invalid prefix")]
     PrefixConfig(regex::Error),
 }
@@ -73,7 +75,7 @@ pub enum MatrixMessengerSignals {
 pub struct MatrixMessenger {
     config: MatrixConfig,
     context: MessengerContext,
-    _handle: Option<JoinHandle<Result<(), MessengerError>>>,
+    handle: Option<JoinHandle<Result<(), MessengerError>>>,
     handlers: Arc<RwLock<CommandHandlers>>,
     signal: Sender<MatrixMessengerSignals>,
     watch: Receiver<MatrixMessengerSignals>,
@@ -88,7 +90,7 @@ impl MatrixMessenger {
         Self {
             config,
             context: MessengerContext::new(),
-            _handle: None,
+            handle: None,
             handlers: Arc::new(RwLock::new(CommandHandlers::new())),
             signal: tx,
             watch: rx,
@@ -142,7 +144,7 @@ impl MatrixMessenger {
         let sync_monitor = last_synced.clone();
 
         let sync_signal = self.signal.clone();
-        let _handle = tokio::spawn(async move {
+        self.handle = Some(tokio::spawn(async move {
             tracing::info!("Spawning sync task");
             let stop_signal = sync_signal.clone();
 
@@ -167,9 +169,24 @@ impl MatrixMessenger {
             tracing::info!("Sending Stop signal");
 
             Ok::<(), MessengerError>(())
-        });
+        }));
 
         Ok(())
+    }
+
+    #[instrument(skip(self), fields(user = self.config.user))]
+    pub fn abort(&mut self) -> Result<(), MessengerError> {
+        if let Some(handle) = &self.handle {
+            handle.abort();
+            Ok(())
+        } else {
+            Err(MessengerError::NotStarted)
+        }
+    }
+
+    /// Name of the user that the bot is configured to operate as
+    pub fn user(&self) -> &str {
+        &self.config.user
     }
 
     /// Returns a signal receiver that can be used to monitor the behaviors of the bot while it is

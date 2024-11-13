@@ -105,26 +105,26 @@ pub async fn setup(homeserver: &str, sender: &str, bots: &[&str]) -> TestSetup {
 }
 
 pub async fn spawn_bot(
-    mut bot: MatrixMessenger,
-) -> (JoinHandle<()>, Receiver<MatrixMessengerSignals>) {
+    bot: &mut MatrixMessenger,
+) -> Receiver<MatrixMessengerSignals> {
     let mut signals = bot.signals();
+    bot.start().await.expect("Bot failed to run to completion");
 
-    let bot_handle = tokio::spawn(async move {
-        bot.start().await.expect("Bot failed to run to completion");
-    });
-
-    tracing::info!(signal = ?signals.borrow(), "Spawned bot");
+    tracing::info!(user = bot.user(), signal = ?signals.borrow(), "Started bot");
 
     // Wait for the bot to register its command handlers
     if *signals.borrow() != MatrixMessengerSignals::RegisterHandlers {
         while signals.changed().await.is_ok() {
             if *signals.borrow() == MatrixMessengerSignals::RegisterHandlers {
+                tracing::info!("Signal changed to RegisterHandlers");
                 break;
             }
         }
     }
 
-    (bot_handle, signals)
+    tracing::info!(user = bot.user(), signal = ?signals.borrow(), "Bot spawned");
+
+    signals
 }
 
 impl TestSetup {

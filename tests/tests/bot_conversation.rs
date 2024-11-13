@@ -72,7 +72,7 @@ async fn test_bot_conversation() {
     tokio::time::timeout(tokio::time::Duration::from_secs(90), async {
         let setup = setup(HOMESERVER, &sender, &[&bot1, &bot2]).await;
 
-        let (bot1, mut bot1_signal) = configure_bot(&bot1).await;
+        let (mut bot1, mut bot1_signal) = configure_bot(&bot1).await;
 
         bot1.register_command(
             "start".to_string(),
@@ -109,7 +109,7 @@ async fn test_bot_conversation() {
         )
         .expect("Failed to register command");
 
-        let (bot2, mut bot2_signal) = configure_bot(&bot2).await;
+        let (mut bot2, mut bot2_signal) = configure_bot(&bot2).await;
 
         bot2.register_command(
             "start".to_string(),
@@ -146,8 +146,8 @@ async fn test_bot_conversation() {
         )
         .expect("Failed to register command");
 
-        let (bot1_handle, _) = spawn_bot(bot1).await;
-        let (bot2_handle, _) = spawn_bot(bot2).await;
+        let _ = spawn_bot(&mut bot1).await;
+        let _ = spawn_bot(&mut bot2).await;
 
         setup.send_cmd("start", "").await;
 
@@ -160,8 +160,8 @@ async fn test_bot_conversation() {
             .await
             .expect("Bot2 channel closed unexpectedly"));
 
-        bot1_handle.abort();
-        bot2_handle.abort();
+        bot1.abort().expect("Failed to stop bot 1");
+        bot2.abort().expect("Failed to stop bot 2");
 
         ()
     })
