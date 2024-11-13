@@ -315,7 +315,7 @@ impl MatrixMessenger {
         <C::Response as Future>::Output: Sized,
     {
         self.handlers.write()?.insert(
-            command,
+            command.clone(),
             Box::new(move |args: CommandArgs| {
                 let fut = handler.run(args);
                 Box::pin(async move {
@@ -323,6 +323,8 @@ impl MatrixMessenger {
                 })
             }),
         );
+
+        tracing::info!(command, self.config.user, "Registered command");
 
         Ok(())
     }
