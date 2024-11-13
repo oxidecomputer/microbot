@@ -35,7 +35,7 @@ mod context;
 mod message;
 
 const SYNC_CALL_TIMEOUT: u64 = 15;
-const MESSAGE_AGE_LIMIT: u8 = 60;
+const MESSAGE_AGE_LIMIT: u32 = 30_000;
 
 #[derive(Debug, Error)]
 pub enum MessengerError {
@@ -230,7 +230,6 @@ impl MatrixMessenger {
     /// attempt ot parse it into a [Command]. If it can, then it will look for the handlers that
     /// is registered for that command and run it. Only a single handler can be registered for a
     /// given command at a time
-    #[instrument(skip(client, handlers, extensions, parser, bot_user))]
     async fn handle_room_message_event<T>(
         event: OriginalSyncMessageLikeEvent<T>,
         room: Room,
