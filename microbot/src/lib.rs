@@ -250,7 +250,7 @@ impl MatrixMessenger {
             let expired = event
                 .unsigned
                 .age
-                .map(|seconds| seconds.abs() < MESSAGE_AGE_LIMIT.into())
+                .map(|seconds| seconds.abs() > MESSAGE_AGE_LIMIT.into())
                 .unwrap_or(true);
 
             // If this event has occured too far in the past (or the future) then we drop the event
@@ -305,7 +305,7 @@ impl MatrixMessenger {
                     }
                 }
             } else {
-                tracing::warn!("Event occured too far in the past or future to process");
+                tracing::warn!(?event.unsigned.age, "Event occured too far in the past or future to process");
             }
         }
     }
