@@ -52,7 +52,9 @@ async fn test_ignores_old_messages() {
             password: receiver.to_string(),
             display_name: receiver.to_string(),
             command_prefix: Some("!".to_string()),
-        });
+        })
+        .await
+        .expect("Bot is constructed");
 
         bot.insert_data(tx).expect("Failed to add bot context data");
 

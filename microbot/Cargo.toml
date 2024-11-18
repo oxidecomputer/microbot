@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+futures = { workspace = true }
 http = { workspace = true }
 matrix-sdk = { workspace = true }
 regex = { workspace = true }

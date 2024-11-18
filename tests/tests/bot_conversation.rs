@@ -27,7 +27,9 @@ async fn configure_bot(bot_name: &str) -> (MatrixMessenger, Receiver<bool>) {
         password: bot_name.to_string(),
         display_name: bot_name.to_string(),
         command_prefix: Some("!".to_string()),
-    });
+    })
+    .await
+    .expect("Bot is constructed");
 
     bot.insert_data(tx).expect("Failed to add bot context data");
 

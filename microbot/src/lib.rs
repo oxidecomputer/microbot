@@ -4,6 +4,7 @@
 
 use command::CommandHandlers;
 use context::MessengerContext;
+use futures::{future::BoxFuture, TryFutureExt};
 use http::Extensions;
 use matrix_sdk::{
     config::SyncSettings, event_handler::Ctx, Client, ClientBuildError, LoopCtrl, Room, RoomState,
@@ -18,15 +19,10 @@ use ruma::{
 };
 use serde::Deserialize;
 use std::{
-    future::Future,
-    sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard},
-    time::{Duration, Instant},
+    future::Future, pin::Pin, sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard}, task::{Context, Poll}, time::{Duration, Instant}
 };
 use thiserror::Error;
-use tokio::{
-    sync::watch::{Receiver, Sender},
-    task::JoinHandle,
-};
+use tokio::sync::watch::{Receiver, Sender};
 use tracing::instrument;
 
 mod command;
@@ -75,7 +71,8 @@ pub enum MatrixMessengerSignals {
 pub struct MatrixMessenger {
     config: MatrixConfig,
     context: MessengerContext,
-    handle: Option<JoinHandle<Result<(), MessengerError>>>,
+    client: Client,
+    inner: Option<BoxFuture<'static, Result<(), MessengerError>>>,
     handlers: Arc<RwLock<CommandHandlers>>,
     signal: Sender<MatrixMessengerSignals>,
     watch: Receiver<MatrixMessengerSignals>,
@@ -83,44 +80,44 @@ pub struct MatrixMessenger {
 }
 
 impl MatrixMessenger {
-    pub fn new(config: MatrixConfig) -> Self {
+    pub async fn new(config: MatrixConfig) -> Result<Self, MessengerError> {
         tracing::info!("Creating bot signals channel");
         let (tx, rx) = tokio::sync::watch::channel(MatrixMessengerSignals::Create);
+        let client = Client::builder()
+            .homeserver_url(&config.url)
+            .build()
+            .await?;
 
-        Self {
+        Ok(Self {
             config,
             context: MessengerContext::new(),
-            handle: None,
+            client,
+            inner: None,
             handlers: Arc::new(RwLock::new(CommandHandlers::new())),
             signal: tx,
             watch: rx,
             last_synced: Arc::new(RwLock::new(None)),
-        }
+        })
     }
 
     #[instrument(skip(self), fields(user = self.config.user))]
     pub async fn start(&mut self) -> Result<(), MessengerError> {
-        let client = Client::builder()
-            .homeserver_url(&self.config.url)
-            .build()
-            .await?;
-
         tracing::info!("Logging in to server");
-        client
+        self.client
             .matrix_auth()
             .login_username(&self.config.user, &self.config.password)
             .initial_device_display_name(&self.config.display_name)
             .await?;
 
         tracing::info!("Add room join handler");
-        client.add_event_handler(Self::handle_autojoin_event);
+        self.client.add_event_handler(Self::handle_autojoin_event);
 
         tracing::info!("Logged in. Starting initial room sync");
-        let response = client.sync_once(SyncSettings::default()).await?;
+        let response = self.client.sync_once(SyncSettings::default()).await?;
         tracing::info!(?response, "Completed initial room sync");
 
         tracing::info!("Starting initial message sync");
-        let response = client
+        let response = self.client
             .sync_once(SyncSettings::default().token(response.next_batch))
             .await?;
         tracing::info!(?response, "Completed initial message sync");
@@ -132,35 +129,34 @@ impl MatrixMessenger {
                 .set_prefix(Some(prefix.clone()))
                 .map_err(MessengerError::PrefixConfig)?;
         }
-        let user_id = client.user_id().map(|id| id.to_owned());
+        let user_id = self.client.user_id().map(|id| id.to_owned());
 
-        client.add_event_handler_context(user_id);
-        client.add_event_handler_context(self.handlers.clone());
-        client.add_event_handler_context(parser);
-        client.add_event_handler_context(self.context.clone());
+        self.client.add_event_handler_context(user_id);
+        self.client.add_event_handler_context(self.handlers.clone());
+        self.client.add_event_handler_context(parser);
+        self.client.add_event_handler_context(self.context.clone());
 
         tracing::info!("Registering event handler");
-        client.add_event_handler(Self::handle_room_message_event::<RoomMessageEventContent>);
+        self.client.add_event_handler(Self::handle_room_message_event::<RoomMessageEventContent>);
 
         self.signal.send(MatrixMessengerSignals::RegisterHandlers).expect("Failed to send signal. This should only ever happen if the internal receiver has gone missing");
         tracing::info!("Sent RegisterHandlers signal");
 
-        let sync_client = client.clone();
-
         tracing::info!("Preparing sync task");
         let last_synced = Arc::new(RwLock::new(Instant::now()));
         let sync_monitor = last_synced.clone();
-
         let sync_signal = self.signal.clone();
-        self.handle = Some(tokio::spawn(async move {
-            tracing::info!("Spawning sync task");
-            let stop_signal = sync_signal.clone();
 
-            let settings = SyncSettings::default()
-                .token(response.next_batch)
-                .timeout(Duration::from_secs(SYNC_CALL_TIMEOUT));
-            sync_client
-                .sync_with_callback(settings, move |_| {
+        tracing::info!("Spawning sync task");
+
+        let settings = SyncSettings::default()
+            .token(response.next_batch)
+            .timeout(Duration::from_secs(SYNC_CALL_TIMEOUT));
+        let sync_client = self.client.clone();
+
+        self.inner = Some(Box::pin(
+            async move {
+                sync_client.sync_with_callback(settings, move |_| {
                     let sync_monitor = sync_monitor.clone();
                     let signal = sync_signal.clone();
                     async move {
@@ -171,30 +167,17 @@ impl MatrixMessenger {
 
                         LoopCtrl::Continue
                     }
-                })
-                .await?;
-
-            stop_signal.send(MatrixMessengerSignals::Stop).expect("Failed to send signal. This should only ever happen if the internal receiver has gone missing");
-            tracing::info!("Sending Stop signal");
-
-            Ok::<(), MessengerError>(())
-        }));
+                }).await
+            }.map_err(|err| MessengerError::Client(err))
+        ));
 
         Ok(())
     }
 
-    pub fn handle(mut self) -> Result<JoinHandle<Result<(), MessengerError>>, MessengerError> {
-        if let Some(handle) = self.handle.take() {
-            Ok(handle)
-        } else {
-            Err(MessengerError::NotStarted)
-        }
-    }
-
     #[instrument(skip(self), fields(user = self.config.user))]
     pub fn abort(&mut self) -> Result<(), MessengerError> {
-        if let Some(handle) = &self.handle {
-            handle.abort();
+        if self.inner.is_some() {
+            self.inner = None;
             Ok(())
         } else {
             Err(MessengerError::NotStarted)
@@ -370,5 +353,23 @@ impl MatrixMessenger {
         tracing::info!(command, self.config.user, "Registered command");
 
         Ok(())
+    }
+}
+
+impl Future for MatrixMessenger {
+    type Output = Result<(), MessengerError>;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if let Some(inner) = self.inner.as_mut() {
+            let res = inner.as_mut().poll(cx);
+            match res {
+                Poll::Ready(result) => {
+                    Poll::Ready(result)
+                }
+                Poll::Pending => Poll::Pending,
+            }
+        } else {
+            Poll::Ready(Err(MessengerError::NotStarted))
+        }
     }
 }
