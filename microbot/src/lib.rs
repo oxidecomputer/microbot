@@ -183,8 +183,8 @@ impl MatrixMessenger {
         Ok(())
     }
 
-    pub fn handle(&self) -> Result<&JoinHandle<Result<(), MessengerError>>, MessengerError> {
-        if let Some(handle) = &self.handle {
+    pub fn handle(mut self) -> Result<JoinHandle<Result<(), MessengerError>>, MessengerError> {
+        if let Some(handle) = self.handle.take() {
             Ok(handle)
         } else {
             Err(MessengerError::NotStarted)
