@@ -34,7 +34,7 @@ pub use command::{CommandArgs, CommandFn, CommandHandler};
 mod context;
 mod message;
 
-const SYNC_CALL_TIMEOUT: u64 = 15;
+const SYNC_CALL_TIMEOUT: u64 = 5;
 const MESSAGE_AGE_LIMIT: u32 = 30_000;
 
 #[derive(Debug, Error)]
