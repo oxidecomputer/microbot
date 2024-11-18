@@ -46,7 +46,7 @@ async fn test_ignores_old_messages() {
 
         let (tx, mut rx) = mpsc::channel::<u8>(1);
 
-        let mut bot = MatrixMessenger::new(MatrixConfig {
+        let bot = MatrixMessenger::new(MatrixConfig {
             url: HOMESERVER.to_string(),
             user: receiver.to_string(),
             password: receiver.to_string(),
@@ -92,7 +92,7 @@ async fn test_ignores_old_messages() {
         )
         .expect("Failed to register command");
 
-        let _ = spawn_bot(&mut bot).await;
+        let (handle, _) = spawn_bot(bot).await;
 
         setup.send_cmd("test_cmd2", "").await;
 
@@ -102,7 +102,7 @@ async fn test_ignores_old_messages() {
             "Check that value received came from test_cmd2 and not test_cmd1"
         );
 
-        bot.abort().expect("Failed to stop bot");
+        handle.abort();
     })
     .await
     .expect("Failed to run bot test in time");

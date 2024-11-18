@@ -42,7 +42,7 @@ async fn test_receives_command() {
 
         let (tx, mut rx) = mpsc::channel::<bool>(1);
 
-        let mut bot = MatrixMessenger::new(MatrixConfig {
+        let bot = MatrixMessenger::new(MatrixConfig {
             url: HOMESERVER.to_string(),
             user: receiver.to_string(),
             password: receiver.to_string(),
@@ -72,13 +72,13 @@ async fn test_receives_command() {
         })
         .expect("Failed to register command");
 
-        let _ = spawn_bot(&mut bot).await;
+        let (handle, _) = spawn_bot(bot).await;
 
         setup.send_cmd("test_cmd", "test_receives_message").await;
 
         assert!(rx.recv().await.expect("Channel closed unexpectedly"));
 
-        bot.abort().expect("Failed to stop bot");
+        handle.abort();
     })
     .await
     .expect("Failed to run bot test in time");

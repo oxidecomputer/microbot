@@ -18,7 +18,7 @@ use matrix_sdk::{
 };
 use microbot::{MatrixMessenger, MatrixMessengerSignals};
 use ruma::api::client::{error::ErrorKind, uiaa};
-use tokio::sync::watch::Receiver;
+use tokio::{sync::watch::Receiver, task::JoinHandle};
 use tracing::instrument;
 
 pub struct TestSetup {
@@ -104,25 +104,20 @@ pub async fn setup(homeserver: &str, sender: &str, bots: &[&str]) -> TestSetup {
     }
 }
 
-pub async fn spawn_bot(bot: &mut MatrixMessenger) -> Receiver<MatrixMessengerSignals> {
-    let mut signals = bot.signals();
-    bot.start().await.expect("Bot failed to run to completion");
+pub async fn spawn_bot(mut bot: MatrixMessenger) -> (JoinHandle<()>, Receiver<MatrixMessengerSignals>) {
+    let user = bot.user().to_string();
+    let signals = bot.signals();
+    bot.start().await.expect("Bot failed to run to start");
 
-    tracing::info!(user = bot.user(), signal = ?signals.borrow(), "Started bot");
+    tracing::info!(user, signal = ?signals.borrow(), "Started bot");
 
-    // Wait for the bot to register its command handlers
-    if *signals.borrow() != MatrixMessengerSignals::RegisterHandlers {
-        while signals.changed().await.is_ok() {
-            if *signals.borrow() == MatrixMessengerSignals::RegisterHandlers {
-                tracing::info!("Signal changed to RegisterHandlers");
-                break;
-            }
-        }
-    }
+    let handle: JoinHandle<()> = tokio::spawn(async move {
+        bot.await.expect("Bot ran to completion");
+    });
 
-    tracing::info!(user = bot.user(), signal = ?signals.borrow(), "Bot spawned");
+    tracing::info!(user, signal = ?signals.borrow(), "Bot spawned");
 
-    signals
+    (handle, signals)
 }
 
 impl TestSetup {
