@@ -19,7 +19,11 @@ use ruma::{
 };
 use serde::Deserialize;
 use std::{
-    future::Future, pin::Pin, sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard}, task::{Context, Poll}, time::{Duration, Instant}
+    future::Future,
+    pin::Pin,
+    sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    task::{Context, Poll},
+    time::{Duration, Instant},
 };
 use thiserror::Error;
 use tokio::sync::watch::{Receiver, Sender};
@@ -117,7 +121,8 @@ impl MatrixMessenger {
         tracing::info!(?response, "Completed initial room sync");
 
         tracing::info!("Starting initial message sync");
-        let response = self.client
+        let response = self
+            .client
             .sync_once(SyncSettings::default().token(response.next_batch))
             .await?;
         tracing::info!(?response, "Completed initial message sync");
@@ -137,7 +142,8 @@ impl MatrixMessenger {
         self.client.add_event_handler_context(self.context.clone());
 
         tracing::info!("Registering event handler");
-        self.client.add_event_handler(Self::handle_room_message_event::<RoomMessageEventContent>);
+        self.client
+            .add_event_handler(Self::handle_room_message_event::<RoomMessageEventContent>);
 
         self.signal.send(MatrixMessengerSignals::RegisterHandlers).expect("Failed to send signal. This should only ever happen if the internal receiver has gone missing");
         tracing::info!("Sent RegisterHandlers signal");
@@ -363,9 +369,7 @@ impl Future for MatrixMessenger {
         if let Some(inner) = self.inner.as_mut() {
             let res = inner.as_mut().poll(cx);
             match res {
-                Poll::Ready(result) => {
-                    Poll::Ready(result)
-                }
+                Poll::Ready(result) => Poll::Ready(result),
                 Poll::Pending => Poll::Pending,
             }
         } else {
