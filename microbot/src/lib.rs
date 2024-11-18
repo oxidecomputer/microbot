@@ -153,7 +153,7 @@ impl MatrixMessenger {
         let sync_monitor = last_synced.clone();
         let sync_signal = self.signal.clone();
 
-        tracing::info!("Spawning sync task");
+        tracing::info!("Creating sync future");
 
         let settings = SyncSettings::default()
             .token(response.next_batch)
@@ -221,6 +221,8 @@ impl MatrixMessenger {
                 Ok(room) => tracing::info!(?room, "Joined room"),
                 Err(err) => tracing::error!(?room, ?err, "Failed to join room"),
             }
+        } else {
+            tracing::info!(?room, "Received message for already joined room");
         }
     }
 
