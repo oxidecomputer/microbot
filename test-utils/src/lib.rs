@@ -104,7 +104,9 @@ pub async fn setup(homeserver: &str, sender: &str, bots: &[&str]) -> TestSetup {
     }
 }
 
-pub async fn spawn_bot(mut bot: MatrixMessenger) -> (JoinHandle<()>, Receiver<MatrixMessengerSignals>) {
+pub async fn spawn_bot(
+    mut bot: MatrixMessenger,
+) -> (JoinHandle<()>, Receiver<MatrixMessengerSignals>) {
     let user = bot.user().to_string();
     let signals = bot.signals();
     bot.start().await.expect("Bot failed to run to start");
