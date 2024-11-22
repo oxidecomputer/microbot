@@ -118,7 +118,7 @@ impl MatrixMessenger {
 
         tracing::info!("Logged in. Starting initial room sync");
         let response = self.client.sync_once(SyncSettings::default()).await?;
-        tracing::info!(?response, "Completed initial room sync");
+        tracing::info!("Completed initial room sync");
 
         tracing::info!("Starting initial message sync");
         let response = self
