@@ -11,7 +11,7 @@ use matrix_sdk::{
 };
 use message::{CommandMessageParser, IntoCommand};
 use ruma::{
-    api::client::{filter::{FilterDefinition, RoomEventFilter}, sync::sync_events::v3::Filter as SyncFilter}, events::{
+    api::client::{filter::FilterDefinition, sync::sync_events::v3::Filter as SyncFilter}, events::{
         room::{member::RoomMemberEventContent, message::RoomMessageEventContent},
         MessageLikeEventContent, OriginalSyncMessageLikeEvent, StrippedStateEvent,
     }, OwnedUserId
@@ -116,7 +116,7 @@ impl MatrixMessenger {
         self.client.add_event_handler(Self::handle_autojoin_event);
 
         tracing::info!("Logged in. Starting initial room sync");
-        let mut initial_sync_settings = SyncSettings::default();
+        let mut initial_sync_settings = SyncSettings::default().full_state(true);
         let mut initial_filter = FilterDefinition::empty();
         initial_filter.room.state.types = Some(vec!["m.room.member".to_string()]);
         initial_sync_settings = initial_sync_settings.filter(SyncFilter::FilterDefinition(initial_filter));
