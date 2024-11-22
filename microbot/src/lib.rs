@@ -11,10 +11,12 @@ use matrix_sdk::{
 };
 use message::{CommandMessageParser, IntoCommand};
 use ruma::{
-    api::client::{filter::FilterDefinition, sync::sync_events::v3::Filter as SyncFilter}, events::{
+    api::client::{filter::FilterDefinition, sync::sync_events::v3::Filter as SyncFilter},
+    events::{
         room::{member::RoomMemberEventContent, message::RoomMessageEventContent},
         MessageLikeEventContent, OriginalSyncMessageLikeEvent, StrippedStateEvent,
-    }, OwnedUserId
+    },
+    OwnedUserId,
 };
 use serde::Deserialize;
 use std::{
@@ -119,10 +121,19 @@ impl MatrixMessenger {
         let mut initial_sync_settings = SyncSettings::default().full_state(true);
         let mut initial_filter = FilterDefinition::empty();
         initial_filter.room.state.types = Some(vec!["m.room.member".to_string()]);
-        initial_sync_settings = initial_sync_settings.filter(SyncFilter::FilterDefinition(initial_filter));
+        initial_sync_settings =
+            initial_sync_settings.filter(SyncFilter::FilterDefinition(initial_filter));
 
         let response = self.client.sync_once(initial_sync_settings).await?;
         tracing::info!("Completed initial room sync");
+
+        let rooms = self
+            .client
+            .rooms()
+            .into_iter()
+            .map(|room| (room.room_id().to_owned(), room.name(), room.state()))
+            .collect::<Vec<_>>();
+        tracing::info!(?rooms, "Discovered rooms");
 
         tracing::info!("Starting initial message sync");
         let response = self
@@ -227,11 +238,18 @@ impl MatrixMessenger {
             match room.join().await {
                 Ok(_) => {
                     tracing::info!(?room_id, ?room_type, room_name, "Joined room")
-                },
-                Err(err) => tracing::error!(?room_id, ?room_type, room_name, ?err, "Failed to join room"),
+                }
+                Err(err) => {
+                    tracing::error!(?room_id, ?room_type, room_name, ?err, "Failed to join room")
+                }
             }
         } else {
-            tracing::info!(?room_id, ?room_type, room_name, "Received message for already joined room");
+            tracing::info!(
+                ?room_id,
+                ?room_type,
+                room_name,
+                "Received message for already joined room"
+            );
         }
     }
 
@@ -255,11 +273,10 @@ impl MatrixMessenger {
         tracing::debug!("Handle room event");
 
         if room.state() == RoomState::Joined {
-            let expired = event
-                .unsigned
-                .age
-                .map(|seconds| seconds.abs() > MESSAGE_AGE_LIMIT.into())
-                .unwrap_or(true);
+            // We want to filter out expired messages, but still allow them in the case that
+            // their age can not be determined
+            let event_age = event.unsigned.age.map(|age| age.abs()).unwrap_or(0.into());
+            let expired = event_age > MESSAGE_AGE_LIMIT.into();
 
             // If this event has occured too far in the past (or the future) then we drop the event
             if !expired {
@@ -267,7 +284,7 @@ impl MatrixMessenger {
 
                 match parsed {
                     Ok(command) => {
-                        tracing::info!(?command, "Parsed command");
+                        tracing::info!(?command, ?event_age, "Parsed command");
 
                         if bot_user
                             .as_ref()
@@ -277,15 +294,19 @@ impl MatrixMessenger {
                             // We successfully parsed the incoming room event into its parts, a "command", and the remaining "message" text
                             let fut = match handlers.read() {
                                 Ok(handlers) => match handlers.get(&command.command) {
-                                    Some(handler) => Some(handler(CommandArgs {
-                                        command,
-                                        room,
-                                        client,
-                                        context: extensions.clone(),
-                                    })),
+                                    Some(handler) => {
+                                        tracing::info!(?command, ?event_age, "Found handle to run");
+                                        Some(handler(CommandArgs {
+                                            command,
+                                            room,
+                                            client,
+                                            context: extensions.clone(),
+                                        }))
+                                    }
                                     None => {
                                         tracing::info!(
                                             ?command,
+                                            ?event_age,
                                             "Did not find handler for command"
                                         );
                                         None
@@ -295,6 +316,7 @@ impl MatrixMessenger {
                                     tracing::error!(
                                         ?err,
                                         ?command,
+                                        ?event_age,
                                         "Did not find handler for command"
                                     );
                                     None
@@ -305,15 +327,15 @@ impl MatrixMessenger {
                                 fut.await;
                             }
                         } else {
-                            tracing::info!("Ignoring command that was sent by this bot")
+                            tracing::info!(?event_age, "Ignoring command that was sent by this bot")
                         }
                     }
                     Err(err) => {
-                        tracing::debug!(?err, "Failed to parse event");
+                        tracing::debug!(?event_age, ?err, "Failed to parse event");
                     }
                 }
             } else {
-                tracing::warn!(?event.unsigned.age, "Event occured too far in the past or future to process");
+                tracing::warn!(?event.unsigned.age, ?event_age, "Event occured too far in the past or future to process");
             }
         }
     }
