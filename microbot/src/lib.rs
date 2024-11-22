@@ -215,11 +215,16 @@ impl MatrixMessenger {
         _client: Client,
     ) {
         if room.state() != RoomState::Joined {
-            tracing::info!(?room, "Attempting to join room");
+            let room_id = room.room_id();
+            let room_type = room.room_type();
+            let room_name = room.name();
+            tracing::info!(?room_id, ?room_type, room_name, "Attempting to join room");
 
             match room.join().await {
-                Ok(room) => tracing::info!(?room, "Joined room"),
-                Err(err) => tracing::error!(?room, ?err, "Failed to join room"),
+                Ok(_) => {
+                    tracing::info!(?room_id, ?room_type, room_name, "Joined room")
+                },
+                Err(err) => tracing::error!(?room_id, ?room_type, room_name, ?err, "Failed to join room"),
             }
         } else {
             tracing::info!(?room, "Received message for already joined room");
