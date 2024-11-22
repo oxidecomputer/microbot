@@ -125,7 +125,7 @@ impl MatrixMessenger {
             .client
             .sync_once(SyncSettings::default().token(response.next_batch))
             .await?;
-        tracing::info!(?response, "Completed initial message sync");
+        tracing::info!("Completed initial message sync");
 
         tracing::info!("Registering context data");
         let mut parser = CommandMessageParser::default();
