@@ -16,4 +16,4 @@ ruma-common = "0.13.0"
 serde = { version = "1.0.215", features = ["derive"] }
 thiserror = "2.0.3"
 tokio = "1.41.1"
-tracing = "0.1.40"
+tracing = "0.1.41"
