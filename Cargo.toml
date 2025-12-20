@@ -9,7 +9,7 @@ resolver = "2"
 [workspace.dependencies]
 futures = "0.3.31"
 http = "1.2.0"
-matrix-sdk = { git = "https://github.com/matrix-org/matrix-rust-sdk.git", rev = "cbb92cacce1d16673a949204e4f88b78e9917026", default-features = false, features = ["rustls-tls"] }
+matrix-sdk = { git = "https://github.com/matrix-org/matrix-rust-sdk.git", rev = "cd9f433358586e8717417fc043650f46362aa14c", default-features = false, features = ["rustls-tls"] }
 regex = "1.11.1"
 ruma = { version = "0.10.1", features = ["events"] }
 ruma-common = "0.13.0"
