@@ -2,7 +2,6 @@ name: Fmt
 
 on:
   push:
-  pull_request:
 
 jobs:
   check_fmt:

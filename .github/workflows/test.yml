@@ -2,7 +2,6 @@ name: Test
 
 on:
   push:
-  pull_request:
 
 jobs:
   test:
@@ -13,7 +12,7 @@ jobs:
       - uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1
         with:
           toolchain: stable
-      
+
       - uses: michaelkaye/setup-matrix-synapse@main
         with:
           uploadLogs: true

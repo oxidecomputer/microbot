@@ -1,10 +1,7 @@
 name: license-check
 
 on:
-  pull_request:
   push:
-    branch:
-      - main
 
 jobs:
   license:
