@@ -276,7 +276,7 @@ impl MatrixMessenger {
             // We want to filter out expired messages, but still allow them in the case that
             // their age can not be determined
             let event_age = event.unsigned.age.map(|age| age.abs()).unwrap_or(0.into());
-            let expired = event_age > MESSAGE_AGE_LIMIT.into();
+            let expired = event_age > ruma::Int::from(MESSAGE_AGE_LIMIT);
 
             // If this event has occured too far in the past (or the future) then we drop the event
             if !expired {
