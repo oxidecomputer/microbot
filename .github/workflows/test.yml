@@ -12,7 +12,7 @@ jobs:
       - run: |
             rustup toolchain install
 
-      - uses: michaelkaye/setup-matrix-synapse@main
+      - uses: michaelkaye/setup-matrix-synapse@e080023c56271cab986b83db75edba570fafb88b # main
         with:
           uploadLogs: true
           httpPort: 8008
