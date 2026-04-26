@@ -11,7 +11,7 @@ futures = "0.3.31"
 http = "1.4.0"
 matrix-sdk = { version = "0.16.0", default-features = false, features = ["rustls-tls"] }
 regex = "1.12.2"
-ruma = { version = "0.14", features = ["events"] }
+ruma = { version = "0.15", features = ["events"] }
 ruma-common = "0.17.0"
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror = "2.0.17"
