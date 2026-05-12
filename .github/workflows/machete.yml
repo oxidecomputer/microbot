@@ -1,0 +1,17 @@
+name: Machete
+
+on:
+  push:
+
+jobs:
+  machete:
+    name: cargo machete
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - run: |
+          rustup toolchain install
+      - run: |
+          cargo install cargo-machete --locked
+      - run: |
+          cargo machete
