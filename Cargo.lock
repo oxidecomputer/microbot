@@ -1652,7 +1652,6 @@ dependencies = [
  "matrix-sdk",
  "regex",
  "ruma",
- "ruma-common",
  "serde",
  "thiserror 2.0.18",
  "tokio",
@@ -2855,7 +2854,6 @@ dependencies = [
 name = "tests"
 version = "0.1.0"
 dependencies = [
- "matrix-sdk",
  "microbot",
  "microbot-test-utils",
  "rand 0.10.1",
