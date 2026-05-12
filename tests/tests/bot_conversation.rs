@@ -4,7 +4,7 @@
 
 use microbot::{CommandArgs, MatrixConfig, MatrixMessenger};
 use microbot_test_utils::{setup, spawn_bot};
-use rand::{distr::Alphanumeric, RngExt};
+use rand::{RngExt, distr::Alphanumeric};
 use ruma::events::room::message::RoomMessageEventContent;
 use tokio::sync::{
     mpsc,
@@ -153,14 +153,18 @@ async fn test_bot_conversation() {
 
         setup.send_cmd("start", "").await;
 
-        assert!(bot1_signal
-            .recv()
-            .await
-            .expect("Bot1 channel closed unexpectedly"));
-        assert!(bot2_signal
-            .recv()
-            .await
-            .expect("Bot2 channel closed unexpectedly"));
+        assert!(
+            bot1_signal
+                .recv()
+                .await
+                .expect("Bot1 channel closed unexpectedly")
+        );
+        assert!(
+            bot2_signal
+                .recv()
+                .await
+                .expect("Bot2 channel closed unexpectedly")
+        );
 
         handle1.abort();
         handle2.abort();

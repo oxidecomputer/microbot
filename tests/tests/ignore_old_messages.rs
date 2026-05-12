@@ -4,7 +4,7 @@
 
 use microbot::{CommandArgs, MatrixConfig, MatrixMessenger};
 use microbot_test_utils::{setup, spawn_bot};
-use rand::{distr::Alphanumeric, RngExt};
+use rand::{RngExt, distr::Alphanumeric};
 use tokio::sync::{mpsc, mpsc::Sender};
 use tracing_subscriber::filter::EnvFilter;
 

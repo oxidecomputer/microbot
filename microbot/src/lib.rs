@@ -4,19 +4,19 @@
 
 use command::CommandHandlers;
 use context::MessengerContext;
-use futures::{future::BoxFuture, TryFutureExt};
+use futures::{TryFutureExt, future::BoxFuture};
 use http::Extensions;
 use matrix_sdk::{
-    config::SyncSettings, event_handler::Ctx, Client, ClientBuildError, LoopCtrl, Room, RoomState,
+    Client, ClientBuildError, LoopCtrl, Room, RoomState, config::SyncSettings, event_handler::Ctx,
 };
 use message::{CommandMessageParser, IntoCommand};
 use ruma::{
+    OwnedUserId,
     api::client::{filter::FilterDefinition, sync::sync_events::v3::Filter as SyncFilter},
     events::{
-        room::{member::PossiblyRedactedRoomMemberEventContent, message::RoomMessageEventContent},
         MessageLikeEventContent, OriginalSyncMessageLikeEvent, StrippedStateEvent,
+        room::{member::PossiblyRedactedRoomMemberEventContent, message::RoomMessageEventContent},
     },
-    OwnedUserId,
 };
 use serde::Deserialize;
 use std::{
