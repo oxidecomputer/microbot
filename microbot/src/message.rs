@@ -62,33 +62,6 @@ pub(crate) struct CommandMessageParser {
     command_pattern: Regex,
 }
 
-#[derive(Debug)]
-pub(crate) struct CommandMessageParserError {
-    pub inner: regex::Error,
-}
-
-impl From<regex::Error> for CommandMessageParserError {
-    fn from(err: regex::Error) -> Self {
-        Self { inner: err }
-    }
-}
-
-impl std::fmt::Display for CommandMessageParserError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Failed to construct command message parser: {}",
-            self.inner
-        )
-    }
-}
-
-impl std::error::Error for CommandMessageParserError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        Some(&self.inner)
-    }
-}
-
 impl Default for CommandMessageParser {
     fn default() -> Self {
         Self {

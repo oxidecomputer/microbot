@@ -43,7 +43,7 @@ pub enum MessengerError {
     #[error("Bot has already been started")]
     AlreadyStarted,
     #[error(transparent)]
-    Builder(#[from] ClientBuildError),
+    Builder(Box<ClientBuildError>),
     #[error(transparent)]
     Client(#[from] matrix_sdk::Error),
     #[error(transparent)]
@@ -52,6 +52,12 @@ pub enum MessengerError {
     NotStarted,
     #[error("Invalid prefix")]
     PrefixConfig(regex::Error),
+}
+
+impl From<ClientBuildError> for MessengerError {
+    fn from(err: ClientBuildError) -> Self {
+        MessengerError::Builder(Box::new(err))
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -189,7 +195,7 @@ impl MatrixMessenger {
                         LoopCtrl::Continue
                     }
                 }).await
-            }.map_err(|err| MessengerError::Client(err))
+            }.map_err(MessengerError::Client)
         ));
 
         Ok(())
