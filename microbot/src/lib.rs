@@ -13,7 +13,7 @@ use message::{CommandMessageParser, IntoCommand};
 use ruma::{
     api::client::{filter::FilterDefinition, sync::sync_events::v3::Filter as SyncFilter},
     events::{
-        room::{member::RoomMemberEventContent, message::RoomMessageEventContent},
+        room::{member::PossiblyRedactedRoomMemberEventContent, message::RoomMessageEventContent},
         MessageLikeEventContent, OriginalSyncMessageLikeEvent, StrippedStateEvent,
     },
     OwnedUserId,
@@ -225,7 +225,7 @@ impl MatrixMessenger {
 
     /// Handles accepting room invites
     async fn handle_autojoin_event(
-        _event: StrippedStateEvent<RoomMemberEventContent>,
+        _event: StrippedStateEvent<PossiblyRedactedRoomMemberEventContent>,
         room: Room,
         _client: Client,
     ) {

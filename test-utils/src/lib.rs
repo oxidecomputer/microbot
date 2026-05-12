@@ -17,7 +17,7 @@ use matrix_sdk::{
     Client, RoomState,
 };
 use microbot::{MatrixMessenger, MatrixMessengerSignals};
-use ruma::api::client::{error::ErrorKind, uiaa};
+use ruma::api::{client::uiaa, error::ErrorKind};
 use tokio::{sync::watch::Receiver, task::JoinHandle};
 use tracing::instrument;
 

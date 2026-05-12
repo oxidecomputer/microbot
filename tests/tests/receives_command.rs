@@ -4,7 +4,7 @@
 
 use microbot::{CommandArgs, MatrixConfig, MatrixMessenger};
 use microbot_test_utils::{setup, spawn_bot};
-use rand::{distributions::Alphanumeric, Rng};
+use rand::{distr::Alphanumeric, RngExt};
 use tokio::sync::{mpsc, mpsc::Sender};
 use tracing_subscriber::filter::EnvFilter;
 
@@ -20,7 +20,7 @@ async fn test_receives_command() {
 
     let sender = format!(
         "test-sender-{}",
-        rand::thread_rng()
+        rand::rng()
             .sample_iter(&Alphanumeric)
             .take(24)
             .map(|b| char::from(b))
@@ -28,7 +28,7 @@ async fn test_receives_command() {
     );
     let receiver = format!(
         "test-receiver-{}",
-        rand::thread_rng()
+        rand::rng()
             .sample_iter(&Alphanumeric)
             .take(24)
             .map(|b| char::from(b))

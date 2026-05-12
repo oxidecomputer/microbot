@@ -4,7 +4,7 @@
 
 use microbot::{CommandArgs, MatrixConfig, MatrixMessenger};
 use microbot_test_utils::{setup, spawn_bot};
-use rand::{distributions::Alphanumeric, Rng};
+use rand::{distr::Alphanumeric, RngExt};
 use ruma::events::room::message::RoomMessageEventContent;
 use tokio::sync::{
     mpsc,
@@ -46,7 +46,7 @@ async fn test_bot_conversation() {
 
     let sender = format!(
         "test-sender-{}",
-        rand::thread_rng()
+        rand::rng()
             .sample_iter(&Alphanumeric)
             .take(24)
             .map(|b| char::from(b))
@@ -54,7 +54,7 @@ async fn test_bot_conversation() {
     );
     let bot1 = format!(
         "test-bot1-{}",
-        rand::thread_rng()
+        rand::rng()
             .sample_iter(&Alphanumeric)
             .take(24)
             .map(|b| char::from(b))
@@ -62,7 +62,7 @@ async fn test_bot_conversation() {
     );
     let bot2 = format!(
         "test-bot2-{}",
-        rand::thread_rng()
+        rand::rng()
             .sample_iter(&Alphanumeric)
             .take(24)
             .map(|b| char::from(b))
