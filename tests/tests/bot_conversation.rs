@@ -12,7 +12,7 @@ use tokio::sync::{
 };
 use tracing_subscriber::filter::EnvFilter;
 
-static HOMESERVER: &'static str = "http://localhost:8008";
+static HOMESERVER: &str = "http://localhost:8008";
 
 // This test configures two bots and an initial sender that will send an initial command.
 // In response to this command the two bots will command messages to the room triggering
@@ -49,7 +49,7 @@ async fn test_bot_conversation() {
         rand::rng()
             .sample_iter(&Alphanumeric)
             .take(24)
-            .map(|b| char::from(b))
+            .map(char::from)
             .collect::<String>()
     );
     let bot1 = format!(
@@ -57,7 +57,7 @@ async fn test_bot_conversation() {
         rand::rng()
             .sample_iter(&Alphanumeric)
             .take(24)
-            .map(|b| char::from(b))
+            .map(char::from)
             .collect::<String>()
     );
     let bot2 = format!(
@@ -65,7 +65,7 @@ async fn test_bot_conversation() {
         rand::rng()
             .sample_iter(&Alphanumeric)
             .take(24)
-            .map(|b| char::from(b))
+            .map(char::from)
             .collect::<String>()
     );
 
@@ -164,8 +164,6 @@ async fn test_bot_conversation() {
 
         handle1.abort();
         handle2.abort();
-
-        ()
     })
     .await
     .expect("Failed to run bot test in time");

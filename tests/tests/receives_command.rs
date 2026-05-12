@@ -8,7 +8,7 @@ use rand::{distr::Alphanumeric, RngExt};
 use tokio::sync::{mpsc, mpsc::Sender};
 use tracing_subscriber::filter::EnvFilter;
 
-static HOMESERVER: &'static str = "http://localhost:8008";
+static HOMESERVER: &str = "http://localhost:8008";
 
 #[tokio::test]
 async fn test_receives_command() {
@@ -23,7 +23,7 @@ async fn test_receives_command() {
         rand::rng()
             .sample_iter(&Alphanumeric)
             .take(24)
-            .map(|b| char::from(b))
+            .map(char::from)
             .collect::<String>()
     );
     let receiver = format!(
@@ -31,7 +31,7 @@ async fn test_receives_command() {
         rand::rng()
             .sample_iter(&Alphanumeric)
             .take(24)
-            .map(|b| char::from(b))
+            .map(char::from)
             .collect::<String>()
     );
 

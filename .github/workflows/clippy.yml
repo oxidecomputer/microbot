@@ -1,14 +1,15 @@
-name: Fmt
+name: Clippy
 
 on:
   push:
 
 jobs:
-  check_fmt:
+  clippy:
+    name: cargo clippy
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: |
           rustup toolchain install
       - run: |
-          cargo fmt -- --check
+          cargo clippy --workspace --all-targets --all-features -- -D warnings
