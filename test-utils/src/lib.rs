@@ -3,18 +3,17 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use matrix_sdk::{
-    self,
+    self, Client, RoomState,
     config::SyncSettings,
     ruma::{
+        OwnedRoomId, OwnedUserId,
         api::client::{
             account::register::v3::Request as RegistrationRequest,
             room::create_room::v3::Request as CreateRoomRequest,
         },
         assign,
         events::room::message::RoomMessageEventContent,
-        OwnedRoomId, OwnedUserId,
     },
-    Client, RoomState,
 };
 use microbot::{MatrixMessenger, MatrixMessengerSignals};
 use ruma::api::{client::uiaa, error::ErrorKind};
@@ -29,9 +28,8 @@ pub struct TestSetup {
 
 pub async fn make_client(homeserver: &str) -> Client {
     let url = matrix_sdk::reqwest::Url::parse(homeserver).expect("Failed to parse homeserver url");
-    let client = Client::new(url).await.expect("Failed to construct client");
 
-    client
+    Client::new(url).await.expect("Failed to construct client")
 }
 
 #[instrument]

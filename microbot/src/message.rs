@@ -3,8 +3,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use matrix_sdk::ruma::{
-    events::room::message::{MessageType, OriginalSyncRoomMessageEvent, TextMessageEventContent},
     OwnedUserId,
+    events::room::message::{MessageType, OriginalSyncRoomMessageEvent, TextMessageEventContent},
 };
 use regex::Regex;
 
