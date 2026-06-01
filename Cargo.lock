@@ -1547,7 +1547,7 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "reqwest",
- "ruma",
+ "ruma 0.15.1",
  "rustls",
  "rustls-native-certs",
  "rustls-pki-types",
@@ -1585,7 +1585,7 @@ dependencies = [
  "matrix-sdk-common",
  "matrix-sdk-store-encryption",
  "regex",
- "ruma",
+ "ruma 0.15.1",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -1606,7 +1606,7 @@ dependencies = [
  "futures-util",
  "gloo-timers",
  "imbl",
- "ruma",
+ "ruma 0.15.1",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -1651,7 +1651,7 @@ dependencies = [
  "http",
  "matrix-sdk",
  "regex",
- "ruma",
+ "ruma 0.16.0",
  "serde",
  "thiserror 2.0.18",
  "tokio",
@@ -1664,7 +1664,7 @@ version = "0.1.0"
 dependencies = [
  "matrix-sdk",
  "microbot",
- "ruma",
+ "ruma 0.16.0",
  "tokio",
  "tracing",
 ]
@@ -2288,9 +2288,23 @@ dependencies = [
  "js_int",
  "js_option",
  "ruma-client-api",
- "ruma-common",
- "ruma-events",
+ "ruma-common 0.18.0",
+ "ruma-events 0.33.0",
  "ruma-html",
+ "web-time",
+]
+
+[[package]]
+name = "ruma"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee4fe5bfacdb0e95e733da3b6c37d98edf46447a4a8e8dea824e0da266d8ad59"
+dependencies = [
+ "assign",
+ "js_int",
+ "js_option",
+ "ruma-common 0.19.0",
+ "ruma-events 0.34.0",
  "web-time",
 ]
 
@@ -2307,8 +2321,8 @@ dependencies = [
  "js_int",
  "js_option",
  "maplit",
- "ruma-common",
- "ruma-events",
+ "ruma-common 0.18.0",
+ "ruma-events 0.33.0",
  "serde",
  "serde_html_form",
  "serde_json",
@@ -2337,7 +2351,7 @@ dependencies = [
  "rand 0.10.1",
  "regex",
  "ruma-identifiers-validation",
- "ruma-macros",
+ "ruma-macros 0.18.0",
  "serde",
  "serde_html_form",
  "serde_json",
@@ -2346,6 +2360,34 @@ dependencies = [
  "tracing",
  "url",
  "uuid",
+ "web-time",
+ "wildmatch",
+ "zeroize",
+]
+
+[[package]]
+name = "ruma-common"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c3b4f00112791b490acce57df1ce3eb3f88899b045bebcff8a29f75369640cc"
+dependencies = [
+ "as_variant",
+ "base64",
+ "bytes",
+ "form_urlencoded",
+ "indexmap",
+ "js_int",
+ "percent-encoding",
+ "regex",
+ "ruma-identifiers-validation",
+ "ruma-macros 0.19.0",
+ "serde",
+ "serde_html_form",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time",
+ "tracing",
+ "url",
  "web-time",
  "wildmatch",
  "zeroize",
@@ -2361,8 +2403,29 @@ dependencies = [
  "indexmap",
  "js_int",
  "js_option",
- "ruma-common",
- "ruma-macros",
+ "ruma-common 0.18.0",
+ "ruma-macros 0.18.0",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tracing",
+ "web-time",
+ "wildmatch",
+ "zeroize",
+]
+
+[[package]]
+name = "ruma-events"
+version = "0.34.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85d2f90830fc131691349b96a69ff53444eb6c3e8dc7869c77961b43cfaf3344"
+dependencies = [
+ "as_variant",
+ "indexmap",
+ "js_int",
+ "js_option",
+ "ruma-common 0.19.0",
+ "ruma-macros 0.19.0",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -2399,6 +2462,23 @@ name = "ruma-macros"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ac022103cd7829721476d3df79d16125be159e99527c8ddb27f125e7b674e5c"
+dependencies = [
+ "as_variant",
+ "cfg-if",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "ruma-identifiers-validation",
+ "serde",
+ "syn",
+ "toml",
+]
+
+[[package]]
+name = "ruma-macros"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8cfb39eaa9b9fd389126ff941e060b496add5cbbfef559d80c46e571dda459c"
 dependencies = [
  "as_variant",
  "cfg-if",
@@ -2857,7 +2937,7 @@ dependencies = [
  "microbot",
  "microbot-test-utils",
  "rand 0.10.1",
- "ruma",
+ "ruma 0.16.0",
  "tokio",
  "tracing",
  "tracing-subscriber",
