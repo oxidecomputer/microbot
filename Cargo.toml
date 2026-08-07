@@ -14,5 +14,5 @@ regex = "1.12.3"
 ruma = { version = "0.15", features = ["events"] }
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror = "2.0.18"
-tokio = "1.52.3"
+tokio = "1.53.1"
 tracing = "0.1.44"
