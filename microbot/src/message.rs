@@ -6,7 +6,7 @@ use matrix_sdk::ruma::{
     OwnedUserId,
     events::room::message::{MessageType, OriginalSyncRoomMessageEvent, TextMessageEventContent},
 };
-use regex::Regex;
+use regex::{Regex, regex};
 
 #[derive(Debug)]
 pub struct MessageParseFailure {}
@@ -65,7 +65,7 @@ pub(crate) struct CommandMessageParser {
 impl Default for CommandMessageParser {
     fn default() -> Self {
         Self {
-            command_pattern: Regex::new(r"(\w+)").expect("Known valid regex failed to compile"),
+            command_pattern: regex!(r"(\w+)").clone(),
             prefix: None,
         }
     }
