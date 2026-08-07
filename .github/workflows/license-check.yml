@@ -7,6 +7,7 @@ jobs:
   license:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@61b9e3751b92087fd0b06925ba6dd6314e06f089 # master
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
     - name: Check License Header
-      uses: apache/skywalking-eyes/header@55373684d1b70e5f8fd9fc8ec114a89ad11a56a3
+      uses: apache/skywalking-eyes/header@61275cc80d0798a405cb070f7d3a8aaf7cf2c2c1 # v0.8.0
