@@ -1,5 +1,8 @@
 name: Test
 
+permissions:
+  contents: read
+
 on:
   push:
 
@@ -8,11 +11,12 @@ jobs:
     name: cargo test
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - run: |
             rustup toolchain install
 
-      - uses: michaelkaye/setup-matrix-synapse@e080023c56271cab986b83db75edba570fafb88b # main
+      - uses: michaelkaye/setup-matrix-synapse@e080023c56271cab986b83db75edba570fafb88b # v1.0.6
         with:
           uploadLogs: true
           httpPort: 8008
