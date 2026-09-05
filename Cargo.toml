@@ -11,7 +11,7 @@ futures = "0.3.33"
 http = "1.5.0"
 matrix-sdk = { version = "0.18.0", default-features = false }
 regex = "1.13.1"
-ruma = { version = "0.16", features = ["events"] }
+ruma = { version = "0.17", features = ["events"] }
 serde = { version = "1.0.229", features = ["derive"] }
 thiserror = "2.0.19"
 tokio = "1.53.1"
